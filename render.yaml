@@ -1,0 +1,23 @@
+# Render Blueprint for the OnWard API. The web client deploys separately on Vercel (client/vercel.json).
+services:
+  - type: web
+    name: onward-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm ci
+    startCommand: node src/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: '22'
+      # The Vercel address of the web client, e.g. https://onward.vercel.app (used for CORS).
+      - key: CLIENT_ORIGIN
+        sync: false
+      # Optional. Without it every AI role uses its built-in fallback. Set it in the dashboard only.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: RECORD_SECRET
+        generateValue: true
