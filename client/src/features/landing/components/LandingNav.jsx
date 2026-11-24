@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { pathForSession } from '../../../lib/sessionRoutes.js';
 import { NAV_LINKS } from '../content.js';
 import Mark from '../../../components/brand/Mark.jsx';
+import { useProfile } from '../../../lib/profile.js';
 
-/** The top bar: full width and fixed. It gains a shadow once the page scrolls. */
+/** A small floating pill, fixed so it travels with the scroll. Its shadow deepens once the page scrolls. */
 export default function LandingNav({ onStart, returnPoint, inert }) {
   const resume = resumeLink(returnPoint);
+  const { profile } = useProfile();
   const [raised, setRaised] = useState(false);
   const [activeId, setActiveId] = useState(null);
 
@@ -32,7 +34,7 @@ export default function LandingNav({ onStart, returnPoint, inert }) {
 
   return (
     <header className={`nav ${raised ? 'is-raised' : ''}`} inert={inert}>
-      <div className="container nav__bar">
+      <div className="nav__bar">
         <a href="#top" className="wordmark" aria-label="OnWard, back to top">
           <LandingMark />
           OnWard
@@ -47,6 +49,11 @@ export default function LandingNav({ onStart, returnPoint, inert }) {
         {resume && (
           <Link to={resume.to} className="key key--small nav__resume">
             {resume.label}
+          </Link>
+        )}
+        {profile && (
+          <Link to="/profile" className="key key--small nav__resume">
+            Profile
           </Link>
         )}
         <button type="button" className="key key--small key--primary" onClick={onStart}>

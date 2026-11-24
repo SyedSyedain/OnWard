@@ -1,9 +1,11 @@
-import { Check } from 'lucide-react';
-import { HERO_STEPS } from '../content.js';
+import { ArrowRight, Check } from 'lucide-react';
+import { DEMO_CHECKS, HERO_STEPS } from '../content.js';
 import { FINAL_STEP, phaseOf, useBenchDemo } from '../hooks/useBenchDemo.js';
 import BenchDemo from './BenchDemo.jsx';
 
 const HEADLINE = ['Do the job', 'before you', 'get it.'];
+/** How long each guide step stays live in the demo, so its fill ends as the next step starts. */
+const STEP_MS = [1600, 2800, 450 * DEMO_CHECKS.length + 200];
 
 export default function HeroSection({ onStart, ready = true }) {
   const demo = useBenchDemo({ ready });
@@ -23,12 +25,10 @@ export default function HeroSection({ onStart, ready = true }) {
             Fix a real ticket in a real codebase. Tests decide.
           </p>
           <div className="hero__actions settle" style={{ '--i': 5 }}>
-            <button type="button" className="key key--primary" onClick={onStart}>
-              Start a simulation
+            <button type="button" className="key key--primary key--hero" onClick={onStart}>
+              <span className="key--hero__label">Start a simulation</span>
+              <ArrowRight className="key--hero__arrow" aria-hidden="true" />
             </button>
-            <a href="#record" className="key">
-              See a work record
-            </a>
           </div>
           <StepGuide demo={demo} />
         </div>
@@ -54,11 +54,12 @@ function StepGuide({ demo }) {
       {HERO_STEPS.map((label, index) => {
         const state = index < current ? 'done' : index === current ? 'active' : 'todo';
         return (
-          <li key={label}>
+          <li key={label} className="guide__item" style={{ '--k': index }}>
             <button
               type="button"
               className="guide__step"
               data-state={state}
+              style={{ '--fill': `${STEP_MS[index]}ms` }}
               aria-current={state === 'active' ? 'step' : undefined}
               onClick={() => demo.jumpTo(index)}
             >

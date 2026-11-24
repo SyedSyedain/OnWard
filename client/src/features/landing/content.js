@@ -53,6 +53,11 @@ export const TEAM = [
     role: 'Engineering Manager',
     when: 'Before you code',
     cantSee: 'your code or the hidden tests',
+    does: [
+      'Explains the ticket and why it matters',
+      'Says what the product should do',
+      'Tells you when it counts as done',
+    ],
     intro: 'SS-214 is yours: coupons apply twice. Ask me what it should do.',
     prompts: [
       {
@@ -69,6 +74,7 @@ export const TEAM = [
     role: 'Senior developer',
     when: 'While you code',
     cantSee: 'the answer or the hidden tests',
+    does: ['Hints one level deeper each time', 'Points you to the right file', 'Each hint costs a few points'],
     intro: 'Stuck? Tell me what you tried. Each hint goes one level deeper.',
     prompts: [
       {
@@ -90,6 +96,7 @@ export const TEAM = [
     role: 'Code reviewer',
     when: 'After the tests',
     cantSee: 'the hidden test code',
+    does: ['Reads your change after the tests', 'Says what to improve next', 'Can’t change your score'],
     intro: 'Your checks ran: 3 of 3 pass. Ask me about the change.',
     prompts: [
       { q: 'Review my change.', a: 'Focused, and the error matches the code around it. Nicely done.' },
@@ -112,16 +119,25 @@ export const SAMPLE_RECORD = {
   name: 'Example Student',
   role: 'Backend developer',
   simulation: 'ShopSphere',
-  task: 'SS-214, Coupons can be applied twice',
-  score: 88,
-  tamperedScore: 100,
+  ticket: 'SS-214',
+  task: 'Coupons can be applied twice',
+  score: { total: 88, correctness: 60, quality: 16, independence: 12 },
+  tamperedScore: { total: 100, correctness: 60, quality: 25, independence: 15 },
+  aspects: { edgeCases: { rating: 4 }, reliability: { rating: 4 }, maintainability: { rating: 3 } },
   facts: [
-    { label: 'Tests passed', value: '12 / 12' },
-    { label: 'Checks', value: '3 / 3' },
-    { label: 'Hint level used', value: '1 of 4' },
-    { label: 'Time spent', value: '34 min' },
+    { label: 'Tests passing', value: '12/12' },
+    { label: 'Checks passed', value: '3/3' },
+    { label: 'Hints used', value: '1/4' },
+    { label: 'Minutes', value: '34' },
   ],
 };
+
+/** How a recruiter checks a record, shown under the QR code. */
+export const VERIFY_STEPS = [
+  'Scan the code or open the link.',
+  'OnWard checks the signature on its server.',
+  'Change one number and the seal breaks.',
+];
 
 export const DIFFICULTIES = [
   { id: 'easy', label: 'Easy' },

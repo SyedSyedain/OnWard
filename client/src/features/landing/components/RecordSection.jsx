@@ -1,16 +1,23 @@
-import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock, FlaskConical, Lightbulb, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useState } from 'react';
-import { SAMPLE_RECORD, SECTION_NOTES } from '../content.js';
+import { ScoreRing, ScoreSplit, SkillRadar, Stat, gradeFor } from '../../../components/score/ScoreVisuals.jsx';
+import { SAMPLE_RECORD, SECTION_NOTES, VERIFY_STEPS } from '../content.js';
+import { useInView } from '../hooks/useInView.js';
 import SectionHead from './SectionHead.jsx';
 
+const FACT_ICONS = [FlaskConical, CheckCircle2, Lightbulb, Clock];
+
 /**
- * A sample Work Record. The switch edits one number so visitors can see
- * the signature stop matching, which is the whole point of the record.
+ * A sample Work Record, drawn with the same scorecard as a real one. The switch edits
+ * the score so visitors can watch the signature stop matching, which is the whole point.
+ * The visuals mount again when the sheet scrolls into view, or the score changes, so they animate then.
  */
 export default function RecordSection() {
   const [tampered, setTampered] = useState(false);
+  const [sheetRef, inView] = useInView({ threshold: 0.3 });
   const score = tampered ? SAMPLE_RECORD.tamperedScore : SAMPLE_RECORD.score;
+  const replay = `${inView}-${score.total}`;
 
   return (
     <section id="record" className="section">
@@ -29,14 +36,29 @@ export default function RecordSection() {
               />
               <figcaption>Scan to open the live record.</figcaption>
             </figure>
-            <label className="switch">
+
+            <ol className="verify__steps">
+              {VERIFY_STEPS.map((step, index) => (
+                <li key={step}>
+                  <span className="verify__num num" aria-hidden="true">
+                    {index + 1}
+                  </span>
+                  {step}
+                </li>
+              ))}
+            </ol>
+
+            <label className="switch verify__try">
               <input type="checkbox" checked={tampered} onChange={(event) => setTampered(event.target.checked)} />
               <span className="switch__track" aria-hidden="true" />
-              Edit the score
+              <span>
+                Edit the score
+                <span className="verify__hint">Try it, and watch the seal.</span>
+              </span>
             </label>
           </div>
 
-          <article className="sheet" data-reveal aria-label="Sample work record">
+          <article ref={sheetRef} className="sheet" data-reveal aria-label="Sample work record">
             <header className="sheet__head">
               <div>
                 <p className="sheet__name">{SAMPLE_RECORD.name}</p>
@@ -50,24 +72,30 @@ export default function RecordSection() {
               </p>
             </header>
 
-            <div className="sheet__task">
-              <p>{SAMPLE_RECORD.task}</p>
-              <p className="sheet__score">
-                <span key={score} className="num sheet__figure">
-                  {score}
-                </span>
-                <span className="sheet__unit">score out of 100</span>
-              </p>
+            <p className="sheet__ticket">
+              <span className="sheet__id">{SAMPLE_RECORD.ticket}</span>
+              {SAMPLE_RECORD.task}
+            </p>
+
+            <div className="sheet__top">
+              <div className="sheet__ring">
+                <ScoreRing key={replay} total={score.total} resolved />
+                <span className="sheet__grade">{gradeFor(score.total, true)}</span>
+              </div>
+              <ScoreSplit key={replay} score={score} />
             </div>
 
-            <dl className="sheet__facts">
-              {SAMPLE_RECORD.facts.map((fact) => (
-                <div key={fact.label}>
-                  <dt>{fact.label}</dt>
-                  <dd className="num">{fact.value}</dd>
-                </div>
-              ))}
-            </dl>
+            <div className="sheet__bottom">
+              <dl className="sheet__stats">
+                {SAMPLE_RECORD.facts.map((fact, index) => (
+                  <Stat key={fact.label} icon={FACT_ICONS[index]} label={fact.label} value={fact.value} />
+                ))}
+              </dl>
+              <div className="sheet__radar">
+                <SkillRadar key={replay} score={score} aspects={SAMPLE_RECORD.aspects} />
+              </div>
+            </div>
+
             <p className="sheet__note">Sample record</p>
           </article>
         </div>

@@ -32,10 +32,10 @@ export default function LandingPage() {
   const [start, setStart] = useState(() => ({
     open: new URLSearchParams(window.location.search).has('start'),
     difficulty: 'easy',
-    roleId: 'frontend-developer',
+    roleId: undefined,
   }));
   const [returnPoint] = useState(readReturnPoint);
-  const openStart = (difficulty = 'easy', roleId = 'frontend-developer') => setStart({ open: true, difficulty, roleId });
+  const openStart = (difficulty = 'easy', roleId) => setStart({ open: true, difficulty, roleId });
   // 'playing' while the intro covers the page, 'done' once it has opened, null when skipped entirely.
   const [intro, setIntro] = useState(() => (shouldPlayIntro() ? 'playing' : null));
   const playing = intro === 'playing';

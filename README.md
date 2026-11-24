@@ -28,6 +28,7 @@ resume, and a certificate only proves attendance.
 | 2. Codespace | Reads, edits and tests a working codebase in a browser editor: one of 4 frontend apps or 4 backend services | **AI Teammate** guides with questions and four levels of hints |
 | 3. Review | Submits the change | **Hidden acceptance tests** decide the result; **AI Reviewer** explains the change and rates code quality |
 | 4. Record | Shares a **Verified Work Record** with a QR code | The record is HMAC-signed, so any edit breaks verification |
+| 5. Profile | Sees a day streak, an activity grid, totals and every past ticket | Created on first start (name, email, role); kept in the browser, no password |
 
 Students pick a role when they start. There are 40 tickets: 20 frontend tickets across four apps
 (Pulsewave music player, Nestly home rentals, TaskFlow kanban board, MediTrack clinic booking) and 20

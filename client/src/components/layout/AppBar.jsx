@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { ROLES } from '../../lib/constants.js';
+import { initials, useProfile } from '../../lib/profile.js';
 import Mark from '../brand/Mark.jsx';
 
 /** The dark OnWard bar above the briefing and results pages: logo, where you are, and the page's actions. */
 export default function AppBar({ session, note, children }) {
+  const { profile } = useProfile();
   const role = session ? (ROLES.find((item) => item.id === session.roleId)?.title ?? session.roleId) : null;
 
   return (
@@ -29,6 +31,16 @@ export default function AppBar({ session, note, children }) {
         <span className="flex-1" />
         {note && <span className="hidden text-xs text-faint md:inline">{note}</span>}
         {children}
+        {profile && (
+          <Link
+            to="/profile"
+            title={`${profile.name}: your profile`}
+            aria-label="Your profile"
+            className="grid size-8 shrink-0 place-items-center rounded-full bg-paper-2 font-display text-xs font-semibold text-ink hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+          >
+            {initials(profile.name)}
+          </Link>
+        )}
       </div>
     </header>
   );

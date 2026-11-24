@@ -4,6 +4,8 @@
  * never the source of truth.
  */
 
+import { addToHistory } from './profile.js';
+
 const STORAGE_KEY = 'onward:return';
 
 export function rememberSession(session) {
@@ -11,6 +13,7 @@ export function rememberSession(session) {
   const next = { ...saved };
 
   if (session.status === 'submitted') {
+    addToHistory(session);
     if (session.result?.recordId) next.recordId = session.result.recordId;
     if (saved.active?.id === session.id) next.active = null;
   } else {

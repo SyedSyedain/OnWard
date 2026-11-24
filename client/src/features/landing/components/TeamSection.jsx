@@ -1,4 +1,4 @@
-import { EyeOff, RotateCcw } from 'lucide-react';
+import { Check, EyeOff, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { HINT_LIMIT, SECTION_NOTES, TEAM } from '../content.js';
 import { prefersReducedMotion } from '../hooks/useInView.js';
@@ -39,30 +39,48 @@ export default function TeamSection() {
         />
 
         <div className="crew" data-reveal>
-          <div role="tablist" aria-label="Your AI colleagues" aria-orientation="vertical" className="crew__list">
-            {TEAM.map((member, index) => (
-              <button
-                key={member.id}
-                ref={(element) => (tabRefs.current[member.id] = element)}
-                type="button"
-                role="tab"
-                id={`crew-${member.id}`}
-                aria-selected={member.id === activeId}
-                aria-controls="crew-chat"
-                tabIndex={member.id === activeId ? 0 : -1}
-                className="crew__item"
-                onClick={() => setActiveId(member.id)}
-                onKeyDown={(event) => handleKeyDown(event, index)}
-              >
-                <span className="avatar avatar--lg" aria-hidden="true">
-                  {member.name[0]}
-                </span>
-                <span className="crew__text">
-                  <span className="crew__when">{member.when}</span>
-                  <span className="crew__name">{member.name}</span>
-                </span>
-              </button>
-            ))}
+          <div className="crew__side">
+            <div role="tablist" aria-label="Your AI colleagues" aria-orientation="vertical" className="crew__list">
+              {TEAM.map((member, index) => (
+                <button
+                  key={member.id}
+                  ref={(element) => (tabRefs.current[member.id] = element)}
+                  type="button"
+                  role="tab"
+                  id={`crew-${member.id}`}
+                  aria-selected={member.id === activeId}
+                  aria-controls="crew-chat"
+                  tabIndex={member.id === activeId ? 0 : -1}
+                  className="crew__item"
+                  onClick={() => setActiveId(member.id)}
+                  onKeyDown={(event) => handleKeyDown(event, index)}
+                >
+                  <span className="avatar avatar--lg" aria-hidden="true">
+                    {member.name[0]}
+                  </span>
+                  <span className="crew__text">
+                    <span className="crew__when">{member.when}</span>
+                    <span className="crew__name">{member.name}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            <div key={active.id} className="crew__card">
+              <p className="crew__card-title">What the {active.name.toLowerCase()} does</p>
+              <ul className="crew__does">
+                {active.does.map((item, index) => (
+                  <li key={item} style={{ '--k': index }}>
+                    <Check aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <p className="crew__blind">
+                <EyeOff aria-hidden="true" />
+                Can’t see {active.cantSee}.
+              </p>
+            </div>
           </div>
 
           <div id="crew-chat" role="tabpanel" aria-labelledby={`crew-${active.id}`} className="chatwin">
@@ -120,10 +138,6 @@ export default function TeamSection() {
                   Start over
                 </button>
               )}
-              <p className="chatwin__blind">
-                <EyeOff aria-hidden="true" />
-                Can’t see {active.cantSee}.
-              </p>
             </footer>
           </div>
         </div>
