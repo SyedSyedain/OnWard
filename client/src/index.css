@@ -29,7 +29,7 @@
 
 @layer base {
   body {
-    @apply bg-white text-slate-800 antialiased;
+    @apply bg-paper text-ink antialiased;
   }
 }
 

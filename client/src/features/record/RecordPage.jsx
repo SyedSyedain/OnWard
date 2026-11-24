@@ -1,13 +1,14 @@
-import { ShieldAlert, ShieldCheck } from 'lucide-react';
+import { CheckCircle2, Clock, FlaskConical, Lightbulb, MessageSquare, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { recordsApi } from '../../api/recordsApi.js';
-import PageLayout from '../../components/layout/PageLayout.jsx';
-import Badge from '../../components/ui/Badge.jsx';
+import AppBar from '../../components/layout/AppBar.jsx';
+import { ScoreRing, ScoreSplit, SkillRadar, Stat, gradeFor } from '../../components/score/ScoreVisuals.jsx';
 import PageState from '../../components/ui/PageState.jsx';
 import { DIFFICULTY_LABELS } from '../../lib/constants.js';
 
+/** The signed record a student shares with a recruiter: who, what, the score and how it was earned, on one screen. */
 export default function RecordPage() {
   const { recordId } = useParams();
   const [data, setData] = useState(null);
@@ -20,93 +21,87 @@ export default function RecordPage() {
   if (!data) return <PageState error={error} />;
 
   const { record, verified } = data;
-  const issuedOn = new Date(record.issuedAt).toLocaleDateString('en-IN', { dateStyle: 'long' });
+  const resolved = record.outcome === 'resolved';
+  const issuedOn = new Date(record.issuedAt).toLocaleDateString('en-IN', { dateStyle: 'medium' });
+  const questions = record.process.managerQuestions + (record.process.teammateMessages ?? 0);
 
   return (
-    <PageLayout width="max-w-3xl">
-      <article className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm sm:p-10">
-        <header className="flex flex-wrap items-start justify-between gap-6 border-b border-slate-100 pb-6">
-          <div>
-            <p className="text-sm font-semibold text-blue-600">Verified Work Record</p>
-            <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">{record.studentName}</h1>
-            <p className="mt-1 text-slate-600">
-              {record.role} · {record.simulation} simulation
-            </p>
-          </div>
-          <VerificationBadge verified={verified} />
-        </header>
-
-        <section className="grid gap-6 border-b border-slate-100 py-6 sm:grid-cols-[1fr_auto]">
-          <div>
-            <div className="mb-2 flex flex-wrap gap-2">
-              <Badge tone="blue">{record.task.id}</Badge>
-              <Badge>{record.task.area}</Badge>
-              <Badge tone="amber">{DIFFICULTY_LABELS[record.task.difficulty]}</Badge>
-              <Badge tone={record.outcome === 'resolved' ? 'green' : 'red'}>
-                {record.outcome === 'resolved' ? 'Resolved' : 'Not resolved'}
-              </Badge>
-            </div>
-            <h2 className="font-semibold text-slate-900">{record.task.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-slate-600">{record.review.summary}</p>
-          </div>
-          <div className="text-right">
-            <p className="text-4xl font-bold text-slate-900">{record.score.total}</p>
-            <p className="text-xs text-slate-500">score out of 100</p>
-          </div>
-        </section>
-
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-4 py-6 text-sm sm:grid-cols-3">
-          <Fact label="Tests passed" value={`${record.tests.passed} / ${record.tests.total}`} />
-          <Fact
-            label="Acceptance checks"
-            value={`${record.tests.acceptancePassed} / ${record.tests.acceptanceTotal}`}
-          />
-          <Fact label="Hint level used" value={`${record.process.hintLevelUsed} of 4`} />
-          <Fact label="Questions to manager" value={record.process.managerQuestions} />
-          <Fact label="Test runs" value={record.process.testRuns} />
-          <Fact label="Time spent" value={`${record.process.minutesSpent} min`} />
-        </dl>
-
-        <footer className="flex flex-wrap items-end justify-between gap-6 border-t border-slate-100 pt-6">
-          <div className="text-xs text-slate-500">
-            <p>Issued {issuedOn}</p>
-            <p className="mt-1 font-mono">Record ID {record.id}</p>
-            <p className="mt-1 max-w-sm">
-              The tests decide the outcome. This record is signed by OnWard; any change to it breaks the signature.
-            </p>
-          </div>
-          <QRCodeSVG value={window.location.href} size={88} aria-label="QR code linking to this record" />
-        </footer>
-      </article>
-      <p className="mt-6 text-center text-sm text-slate-500">
-        Earned on OnWard, where students practise a real engineering job before they get one.{' '}
-        <Link to="/?start" className="font-medium text-slate-900 underline underline-offset-4 hover:text-slate-700">
-          Try a ticket yourself
+    <div className="min-h-dvh bg-paper font-ui text-ink">
+      <AppBar note="Verified work record">
+        <Link
+          to="/?start"
+          className="flex h-9 items-center rounded-md bg-accent px-3.5 text-sm font-medium text-ink hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper-2 print:hidden"
+        >
+          Try a ticket
         </Link>
-      </p>
-    </PageLayout>
-  );
-}
+      </AppBar>
 
-function VerificationBadge({ verified }) {
-  const Icon = verified ? ShieldCheck : ShieldAlert;
-  return (
-    <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
-        verified ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-      }`}
-    >
-      <Icon className="size-4" aria-hidden />
-      {verified ? 'Signature verified' : 'Signature invalid'}
-    </span>
-  );
-}
+      <main className="mx-auto max-w-6xl px-4 py-5 sm:px-6">
+        <article className="rounded-2xl border border-line bg-paper-2 p-5 sm:p-7">
+          <header className="flex flex-wrap items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h1 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">{record.studentName}</h1>
+              <p className="mt-1 text-[15px] text-muted">
+                {record.role} on {record.simulation}
+              </p>
+            </div>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium ${
+                verified ? 'bg-ok-soft text-ok' : 'bg-bad-soft text-bad'
+              }`}
+            >
+              {verified ? <ShieldCheck className="size-4" aria-hidden /> : <ShieldAlert className="size-4" aria-hidden />}
+              {verified ? 'Verified' : 'Signature invalid'}
+            </span>
+          </header>
 
-function Fact({ label, value }) {
-  return (
-    <div>
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="mt-0.5 font-medium text-slate-900">{value}</dd>
+          <div className="mt-5 flex flex-wrap items-center gap-1.5 text-xs">
+            <span className="rounded-md bg-ink px-1.5 py-0.5 font-mono text-paper-2">{record.task.id}</span>
+            <span className="rounded-md bg-paper-3 px-1.5 py-0.5 text-ink-2">{record.task.area}</span>
+            <span className="rounded-md bg-accent-soft px-1.5 py-0.5">{DIFFICULTY_LABELS[record.task.difficulty]}</span>
+            <span className="ml-1 text-sm text-ink-2">{record.task.title}</span>
+          </div>
+
+          <div className="mt-6 grid items-center gap-6 border-y border-line py-6 md:grid-cols-[auto_minmax(0,1fr)] lg:grid-cols-[auto_minmax(0,1fr)_300px]">
+            <div className="flex flex-col items-center gap-2">
+              <ScoreRing total={record.score.total} resolved={resolved} />
+              <span className={`text-sm font-medium ${resolved ? 'text-ok' : 'text-bad'}`}>
+                {gradeFor(record.score.total, resolved)}
+              </span>
+            </div>
+            <div className="min-w-0 space-y-5">
+              <ScoreSplit score={record.score} />
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <Stat
+                  icon={CheckCircle2}
+                  label="Acceptance checks"
+                  value={`${record.tests.acceptancePassed}/${record.tests.acceptanceTotal}`}
+                />
+                <Stat icon={FlaskConical} label="Tests passing" value={`${record.tests.passed}/${record.tests.total}`} />
+                <Stat icon={Lightbulb} label="Hints used" value={`${record.process.hintLevelUsed}/4`} />
+                <Stat icon={Clock} label="Minutes" value={record.process.minutesSpent} />
+                <Stat icon={FlaskConical} label="Test runs" value={record.process.testRuns} />
+                <Stat icon={MessageSquare} label="Questions asked" value={questions} />
+              </dl>
+            </div>
+            <div className="mx-auto aspect-square w-full max-w-[300px]">
+              <SkillRadar score={record.score} aspects={record.review.aspects} />
+            </div>
+          </div>
+
+          <footer className="mt-5 flex flex-wrap items-end justify-between gap-5">
+            <p className="line-clamp-2 max-w-[62ch] text-[14.5px] leading-snug text-ink-2">{record.review.summary}</p>
+            <div className="flex items-center gap-3 text-right text-xs text-muted">
+              <p>
+                Issued {issuedOn}
+                <br />
+                <span className="font-mono">{record.id}</span>
+              </p>
+              <QRCodeSVG value={window.location.href} size={64} aria-label="QR code linking to this record" />
+            </div>
+          </footer>
+        </article>
+      </main>
     </div>
   );
 }

@@ -105,7 +105,13 @@ export async function submit(sessionId) {
       filesChanged: diff.changedFiles,
       minutesSpent: Math.max(1, Math.round((submittedAt - new Date(session.startedAt)) / 60000)),
     },
-    review: { summary: review.summary, strengths: review.strengths, improvements: review.improvements },
+    review: {
+      summary: review.summary,
+      strengths: review.strengths,
+      improvements: review.improvements,
+      // Only when present: an undefined key would not survive storage and would break the signature.
+      ...(review.aspects && { aspects: review.aspects }),
+    },
   });
 
   session.status = SESSION_STATUS.SUBMITTED;

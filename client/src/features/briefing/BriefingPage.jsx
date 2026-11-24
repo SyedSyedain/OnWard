@@ -48,47 +48,33 @@ export default function BriefingPage() {
   );
 
   return (
-    <div className="min-h-screen bg-paper">
-      <AppBar session={session} note="Briefing, then the Codespace">
+    <div className="min-h-dvh bg-paper lg:flex lg:h-dvh lg:flex-col">
+      <AppBar session={session} note="Briefing">
         {startButton('Start working')}
       </AppBar>
 
-      <main className="mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 sm:pt-10">
-        <div className="mb-6 max-w-2xl font-ui">
-          <p className="font-display text-xl font-semibold tracking-tight text-ink">
-            Welcome to the team, {session.studentName}.
-          </p>
-          <p className="mt-1 text-[15px] text-muted">
-            Your manager has assigned you a ticket on {session.simulationName}. Read it, ask about anything unclear,
-            then start working.
-          </p>
-        </div>
-
-        <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
-          <section className="overflow-hidden rounded-xl border border-line bg-paper-2">
+      <main className="mx-auto grid w-full max-w-6xl items-start gap-4 px-4 py-5 sm:px-6 lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-stretch">
+        <section className="flex min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-paper-2">
+          <div className="min-h-0 flex-1 overflow-y-auto">
             <TicketCard ticket={session.ticket} />
-            <footer className="flex flex-col gap-3 border-t border-line bg-paper px-6 py-4 font-ui sm:flex-row sm:items-center sm:justify-between sm:px-8">
-              <p className="text-[13px] text-muted">The ticket and your manager stay with you in the Codespace.</p>
-              {startButton('Open the Codespace', 'self-start sm:self-auto')}
-            </footer>
-            {startError && (
-              <p role="alert" className="border-t border-line bg-bad-soft px-6 py-3 font-ui text-[13px] text-bad sm:px-8">
-                {startError}
-              </p>
-            )}
-          </section>
+          </div>
+          {startError && (
+            <p role="alert" className="border-t border-line bg-bad-soft px-6 py-3 font-ui text-[13px] text-bad">
+              {startError}
+            </p>
+          )}
+        </section>
 
-          <section
-            aria-label="Conversation with your Engineering Manager"
-            className="flex h-[520px] flex-col overflow-hidden rounded-xl border border-line bg-paper-2 lg:sticky lg:top-20 lg:h-[calc(100vh-7rem)] lg:max-h-[640px]"
-          >
-            <ManagerChat
-              session={session}
-              onSessionChange={setSession}
-              empty="Ask about requirements, users or priority. Your manager will not explain the code: that is your job."
-            />
-          </section>
-        </div>
+        <section
+          aria-label="Conversation with your Engineering Manager"
+          className="flex h-[520px] flex-col overflow-hidden rounded-2xl border border-line bg-paper-2 lg:h-auto lg:min-h-0"
+        >
+          <ManagerChat
+            session={session}
+            onSessionChange={setSession}
+            empty="Ask about users, priority or scope. The code is yours to read."
+          />
+        </section>
       </main>
     </div>
   );
