@@ -10,7 +10,11 @@ const SUGGESTIONS = ['Who is affected by this?', 'Is there anything out of scope
  * The conversation with the Engineering Manager, continued from the briefing.
  * The manager clarifies requirements and priority; the teammates help with code.
  */
-export default function ManagerChat({ session, onSessionChange }) {
+export default function ManagerChat({
+  session,
+  onSessionChange,
+  empty = 'Your briefing conversation continues here. Ask about requirements, users or priority.',
+}) {
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState(null);
 
@@ -42,7 +46,7 @@ export default function ManagerChat({ session, onSessionChange }) {
         messages={session.managerMessages}
         them="Your manager"
         typing={typing}
-        empty="Your briefing conversation continues here. Ask about requirements, users or priority."
+        empty={empty}
       />
       {error && <p className="shrink-0 px-4 pb-2 font-ui text-xs text-bad">{error}</p>}
       <Composer
