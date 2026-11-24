@@ -1,0 +1,163 @@
+{
+  "simulationId": "meditrack",
+  "simulationName": "MediTrack",
+  "roleId": "frontend-developer",
+  "description": "MediTrack is the patient web app of a neighbourhood clinic: browse doctors, pick an appointment slot, book it and manage upcoming appointments.",
+  "issues": [
+    {
+      "id": "MT-101",
+      "difficulty": "easy",
+      "area": "Time formatting",
+      "title": "Noon appointments show as 0:30 PM instead of 12:30 PM",
+      "symptoms": "Patients see slots such as 0:30 PM in the time picker and in their appointment list. Early-morning slots after midnight show 0:15 AM.",
+      "relevantFiles": ["src/lib/format.js"],
+      "acceptanceCriteria": [
+        "Times between 12:00 and 12:59 are shown with 12 as the hour and PM, for example 12:30 PM.",
+        "Times between 00:00 and 00:59 are shown with 12 as the hour and AM, for example 12:15 AM.",
+        "All other times are formatted exactly as before, for example 9:05 AM and 3:45 PM."
+      ],
+      "hiddenTest": "MT-101.test.js",
+      "hints": [
+        "Find the function that turns a 24-hour time string into a label. What does it print for 12:30 and for 00:15?",
+        "Converting to a 12-hour clock with a remainder gives 0 for both noon and midnight, but a clock face never shows 0.",
+        "When the remainder of the hour is 0, the label should use 12 instead.",
+        "Change the hour calculation in formatTime so that hours % 12 falls back to 12 when it equals 0."
+      ],
+      "context": {
+        "affected": "Every patient booking around lunchtime sees a confusing time, and the front desk has had patients arrive at midnight-style hours by mistake.",
+        "priority": "Medium: confusing but patients can still book. We would like it fixed this sprint.",
+        "outOfScope": "Do not change how times are stored (24-hour HH:mm) or switch the app to a 24-hour display.",
+        "reproduce": "1. Open the app and select Dr. Meera Iyer.\n2. Look at the slots for any day.\n3. Find the slot booked for half past noon: it reads 0:30 PM."
+      },
+      "guide": {
+        "alex": "Times are stored as 24-hour HH:mm strings and only turned into labels at render time. formatTime in src/lib/format.js is used by selectSlotsByDay in selectors.js, the appointment list and the cancel dialog, so one function drives every place a time appears. Read it with 12:30 and 00:15 in mind.",
+        "sarah": "Try the boundary times: 00:00, 00:15, 11:59, 12:00, 12:30, 13:00 and 23:59. Check the AM/PM label and the hour for each, and make sure single-digit hours do not get a leading zero.",
+        "daniel": "A 12-hour clock has no hour 0: it runs 12, 1, 2 ... 11. The remainder operator maps 12 to 0, so the numbers that wrap around need special handling. Whenever you convert between two counting systems, test the point where the numbers wrap."
+      }
+    },
+    {
+      "id": "MT-102",
+      "difficulty": "easy",
+      "area": "Booking form",
+      "title": "The booking form accepts phone numbers with only 9 digits",
+      "symptoms": "The clinic keeps receiving bookings with phone numbers that are one digit short, so the front desk cannot call patients back.",
+      "relevantFiles": ["src/lib/validation.js"],
+      "acceptanceCriteria": [
+        "A phone number with 9 digits is rejected and the form shows a phone error.",
+        "A short number is still rejected when written with spaces, dashes or a +91 prefix.",
+        "Valid 10-digit numbers, with or without spaces, dashes or +91, are still accepted."
+      ],
+      "hiddenTest": "MT-102.test.js",
+      "hints": [
+        "Start from the form validation and find the check that decides if a phone number is valid.",
+        "The check allows a range of lengths, but the clinic only uses numbers of one specific length.",
+        "The pattern that tests the digits should require exactly 10 of them.",
+        "In isValidPhone, change the pattern from allowing 9 to 10 digits to allowing exactly 10 digits."
+      ],
+      "context": {
+        "affected": "Front desk staff, who cannot reach roughly one in twenty patients to confirm their visit.",
+        "priority": "High: we are losing confirmed appointments every day.",
+        "outOfScope": "Do not change how phone numbers are normalised (spaces, dashes, +91) and do not add new fields to the form.",
+        "reproduce": "1. Select a doctor and pick a slot.\n2. Fill in a name and a reason.\n3. Enter 987654321 as the phone number and submit.\n4. The booking goes through instead of showing an error."
+      },
+      "guide": {
+        "alex": "The form is validated in validateBooking in src/lib/validation.js, which calls isValidPhone. That function first runs normalizePhone to strip separators and the country code, then tests what is left. Look at the test that runs after normalisation.",
+        "sarah": "Try 9, 10 and 11 digit numbers, then the same digits with spaces, dashes and a +91 prefix. A number with a leading 0 and 11 digits is a trunk-prefixed number and should still be fine. Empty and letter-only input must stay invalid.",
+        "daniel": "Range checks are a common source of boundary bugs. When a rule says exactly N, a pattern that allows N-1 to N lets bad data in. Write down the valid lengths first, then check that the pattern accepts exactly those and nothing else."
+      }
+    },
+    {
+      "id": "MT-103",
+      "difficulty": "medium",
+      "area": "Doctor search",
+      "title": "Searching for a doctor ignores the selected specialty",
+      "symptoms": "A patient picks Dermatology and then types part of a name, but doctors from other specialties show up in the results. Clearing the search brings the filter back.",
+      "relevantFiles": ["src/lib/filtering.js"],
+      "acceptanceCriteria": [
+        "With a specialty selected and a search typed, only doctors who match both are listed.",
+        "The visible doctors in the app state respect both the search and the specialty.",
+        "Search alone and specialty alone keep working as before."
+      ],
+      "hiddenTest": "MT-103.test.js",
+      "hints": [
+        "Reproduce it with a specialty selected and a name typed at the same time. Which filter seems to win?",
+        "The function returns early as soon as there is a search text, so the specialty rule is never reached.",
+        "Both rules need to apply to the same list, one after the other, rather than being alternatives.",
+        "In filterDoctors, apply the name match and the specialty match together (for example by filtering once for each condition) instead of returning after the name match."
+      ],
+      "context": {
+        "affected": "Every patient who uses search and the specialty filter together, which is most mobile users.",
+        "priority": "Medium: patients find the right doctor eventually but lose trust in the filter.",
+        "outOfScope": "Do not change how names are matched (case-insensitive, trimmed) and do not change the specialty drop-down.",
+        "reproduce": "1. Open the doctor list.\n2. Choose Dermatology in the specialty drop-down.\n3. Type 'a' in the search box.\n4. Doctors from Cardiology and Pediatrics also appear."
+      },
+      "guide": {
+        "alex": "The search box and drop-down both dispatch filters/changed, which stores query and specialty side by side in state.filters. selectVisibleDoctors in selectors.js hands those filters to filterDoctors in src/lib/filtering.js, which is the only place the two are combined. Read the order of its checks.",
+        "sarah": "Try each combination: no filters, search only, specialty only, and both. Use a query that matches doctors in several specialties, and one that matches nobody in the chosen specialty (the list should be empty). Check upper-case and padded queries too.",
+        "daniel": "When two filters must both hold, they combine with AND: the result of one feeds the next. An early return is fine for guarding, but it turns two rules into alternatives. Ask yourself which of the rules each code path actually checks."
+      }
+    },
+    {
+      "id": "MT-104",
+      "difficulty": "medium",
+      "area": "Upcoming appointments",
+      "title": "The same appointment shows at the bottom of one page and the top of the next",
+      "symptoms": "Pages of upcoming appointments show six rows instead of five, and the last row of a page is repeated as the first row of the next page.",
+      "relevantFiles": ["src/lib/pagination.js", "src/state/selectors.js"],
+      "acceptanceCriteria": [
+        "Each page contains exactly the page size number of items (except the last page).",
+        "No appointment appears on two different pages.",
+        "The last page and lists shorter than one page still show the right items and page count."
+      ],
+      "hiddenTest": "MT-104.test.js",
+      "hints": [
+        "Open the appointments list with more than five appointments and compare page 1 and page 2. Where does the overlap start?",
+        "Each page takes a slice of the list, and the slice is one item longer than the page size.",
+        "The end of a slice is exclusive: it is the index of the first item that is not included.",
+        "In paginate, the end index passed to slice should be start + pageSize, without adding 1."
+      ],
+      "context": {
+        "affected": "Patients with more than five upcoming appointments, which includes most of our long-term patients.",
+        "priority": "Medium: it looks sloppy and makes patients think they are booked twice.",
+        "outOfScope": "Do not change the page size or the pager buttons.",
+        "reproduce": "1. Open the app with the sample data (seven upcoming appointments).\n2. Look at page 1: six rows are shown.\n3. Click Next: the sixth row is shown again at the top."
+      },
+      "guide": {
+        "alex": "The appointments panel gets its rows from selectAppointmentsPage in selectors.js, which sorts the upcoming appointments and passes them to paginate in src/lib/pagination.js with a page size of 5. The component only renders what paginate returns, so look at how paginate cuts the list.",
+        "sarah": "Count the rows per page with 4, 5, 6, 10, 11 and 12 appointments. Check that no id repeats across pages, that the last page has the remainder, and that the page count still matches.",
+        "daniel": "This is a classic off-by-one. Array slice takes a start index that is included and an end index that is not. If one page ends at index 4 and the next starts at index 5, nothing overlaps. Draw a small list on paper and mark where each page starts and stops."
+      }
+    },
+    {
+      "id": "MT-105",
+      "difficulty": "hard",
+      "area": "Cancel appointment",
+      "title": "Cancelling an appointment leaves an empty page or changes data behind the scenes",
+      "symptoms": "After cancelling the only appointment on the last page, patients see 'Page 2 of 1' with an empty list. Developers also see the appointment change in old copies of the app state.",
+      "relevantFiles": ["src/state/reducer.js", "src/state/selectors.js", "src/lib/pagination.js"],
+      "acceptanceCriteria": [
+        "Confirming a cancel never modifies the previous state: the old appointments array and its items stay untouched.",
+        "After cancelling the last appointment on the last page, the app moves back to the previous page and lists its appointments.",
+        "Cancelling elsewhere keeps the current page, closes the dialog, shows a notice, and only the chosen appointment changes status."
+      ],
+      "hiddenTest": "MT-105.test.js",
+      "hints": [
+        "Cancel an appointment and think about two things: what object does the reducer change, and which page does the patient land on afterwards?",
+        "The cancel step edits the appointment object that is already in the state, and it never checks that the current page still exists afterwards.",
+        "Build a new appointments array with a new object for the cancelled one, then make sure the page number is not larger than the number of pages that are left.",
+        "In the cancel/confirmed case of the reducer, map over state.appointments to create a copy with status 'cancelled' for the target, then limit appointmentPage to the total pages of the upcoming list that is left (at least 1)."
+      ],
+      "context": {
+        "affected": "Patients who cancel and then see an empty list, and the team, because the stale state makes debugging and undo features unreliable.",
+        "priority": "High: it blocks the cancel-and-rebook flow we want to promote next week.",
+        "outOfScope": "Do not change the dialog markup or the wording of the notice, and do not change how the other actions behave.",
+        "reproduce": "1. Load the app with six upcoming appointments and go to page 2 (it has one row).\n2. Click Cancel on that row and confirm.\n3. The list shows 'Page 2 of 1' and no rows."
+      },
+      "guide": {
+        "alex": "Cancelling is a two-step flow: cancel/requested stores cancelTargetId, then cancel/confirmed in src/state/reducer.js updates the appointment. The list you see comes from selectAppointmentsPage in selectors.js, which uses state.appointmentPage and paginate. Compare how the other reducer cases build their new state with how this one does.",
+        "sarah": "Keep a reference to the state before cancelling and check that its appointments did not change. Then test with 6 appointments on page 2 (cancel the only row), 7 appointments on page 2 (cancel the last row), and 7 on page 1. Also confirm the dialog closes and the notice appears every time.",
+        "daniel": "Two ideas meet here. Reducers must return new objects instead of editing the old ones, otherwise old snapshots change under your feet. And whenever the data shrinks, any index or page number that points into it must be checked against the new size so it cannot point past the end."
+      }
+    }
+  ]
+}

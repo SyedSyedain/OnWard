@@ -1,0 +1,13 @@
+{
+  "name": "nestly",
+  "version": "1.0.0",
+  "description": "Nestly: the website of a home-rental marketplace, used as an OnWard engineering simulation.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

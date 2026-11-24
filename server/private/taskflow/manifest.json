@@ -1,0 +1,163 @@
+{
+  "simulationId": "taskflow",
+  "simulationName": "TaskFlow",
+  "roleId": "frontend-developer",
+  "description": "TaskFlow is the web app of a team kanban board with columns, cards, due-date badges, assignee filtering and keyboard shortcuts.",
+  "issues": [
+    {
+      "id": "TF-101",
+      "difficulty": "easy",
+      "area": "New-card form",
+      "title": "Cards can be created with a blank-looking title",
+      "symptoms": "Users who press the space bar a few times and submit end up with an empty-looking card on the board. The form shows no error.",
+      "relevantFiles": ["src/lib/validation.js"],
+      "acceptanceCriteria": [
+        "A title that contains only spaces, tabs or newlines is rejected.",
+        "The rejected title reports the same 'Title is required.' message as an empty title.",
+        "A normal title, including one with spaces around it, is still accepted."
+      ],
+      "hiddenTest": "TF-101.test.js",
+      "hints": [
+        "Look at how validateCardInput decides that a title is missing. What exactly does it measure?",
+        "An empty string has length zero, but a string of spaces does not, so it slips through the required check.",
+        "Ignore leading and trailing whitespace when checking that the title is present.",
+        "Check the length of title.trim() instead of title when deciding whether the title is empty."
+      ],
+      "context": {
+        "affected": "Most teams hit this a few times a week and the board fills up with cards nobody can read or click on. It is cosmetic but annoying.",
+        "priority": "Medium: it is a small fix we want in this sprint's release.",
+        "outOfScope": "Do not change the 80 character limit or the due-date validation, and do not change how the reducer stores titles.",
+        "reproduce": "1. Open the board and focus the Title field.\n2. Type three spaces.\n3. Press Add card.\n4. Notice that no error is shown and a card with no visible title appears in To do."
+      },
+      "guide": {
+        "alex": "The form submit handler in src/main.js calls validateCardInput in src/lib/validation.js before dispatching ADD_CARD. Read the title branch of that function first. The reducer already trims titles when it stores them, which is why the stored card looks empty.",
+        "sarah": "Try an empty string, a single space, several spaces, a tab and a newline, and a title with spaces on both sides of real text. Also try an 80 character title with trailing spaces to make sure you did not change the length rule.",
+        "daniel": "User input is rarely clean. 'Required' normally means 'has some visible content', so values should be normalised the same way when you check them as when you store them. Compare what the check sees with what ends up saved."
+      }
+    },
+    {
+      "id": "TF-102",
+      "difficulty": "easy",
+      "area": "Card rendering",
+      "title": "A card title containing HTML breaks the board layout",
+      "symptoms": "Someone created a card called with angle brackets in it and the card shows up as formatted text or disappears. Another title with an image tag made the board load a broken image.",
+      "relevantFiles": ["src/components/card.js", "src/lib/html.js"],
+      "acceptanceCriteria": [
+        "Angle brackets in a card title are shown as text, not interpreted as HTML.",
+        "Quotes and ampersands in a title are escaped as well.",
+        "Ordinary titles are displayed exactly as before."
+      ],
+      "hiddenTest": "TF-102.test.js",
+      "hints": [
+        "Compare how renderCard prints the assignee with how it prints the title.",
+        "The assignee goes through the shared escaping helper, but the title is inserted into the markup as it is.",
+        "Pass the title through the same helper the other user-provided fields use.",
+        "In renderCard, replace ${card.title} with ${escapeHtml(card.title)}."
+      ],
+      "context": {
+        "affected": "Any user can inject markup into a board that the whole team sees. Security flagged it as a stored cross-site scripting risk.",
+        "priority": "High: security asked for this before the Friday release.",
+        "outOfScope": "Do not rewrite escapeHtml and do not change how titles are validated or stored.",
+        "reproduce": "1. Create a card with the title <b>Urgent</b> or <img src=x>.\n2. Look at the card on the board.\n3. The title is bold or shows a broken image instead of the literal text."
+      },
+      "guide": {
+        "alex": "Cards are rendered by renderCard in src/components/card.js, which is called for every card by renderColumn. The shared helper escapeHtml lives in src/lib/html.js and is used by most other components. Read renderCard line by line and note which values go through it.",
+        "sarah": "Create titles such as <script>alert(1)</script>, <img src=x>, Fish & Chips, and \"quoted\". Check what the card looks like and what the HTML string contains. Also confirm that a plain title is unchanged.",
+        "daniel": "Escaping means turning characters that have a special meaning in HTML into harmless text before inserting them into a page. The rule is simple: every value a user can type must be escaped at the moment it is placed into markup. One missed field is enough to open a hole."
+      }
+    },
+    {
+      "id": "TF-103",
+      "difficulty": "medium",
+      "area": "Due dates",
+      "title": "Cards due today are marked overdue",
+      "symptoms": "Cards that are due today show a red Overdue badge from the moment the page loads, even in the morning. They only look right when they are due tomorrow or later.",
+      "relevantFiles": ["src/lib/dates.js"],
+      "acceptanceCriteria": [
+        "A card due today is never classified as overdue, at any time of day.",
+        "A card due today shows the due-soon badge instead of the overdue badge.",
+        "Cards due yesterday are still overdue and later dates keep their current status."
+      ],
+      "hiddenTest": "TF-103.test.js",
+      "hints": [
+        "Read getDueStatus. What two values does it compare to decide a card is overdue?",
+        "A due date has no time, so it is treated as midnight, while now includes the current time. Midnight today is always earlier than now.",
+        "Compare calendar days instead of exact moments in time.",
+        "Use the day difference between now and the due date, for example daysBetween(now, due) < 0, as the overdue condition."
+      ],
+      "context": {
+        "affected": "Every team that plans work by due date sees today's cards flagged as late, which makes the overdue badge meaningless and causes needless escalations.",
+        "priority": "High: managers use the overdue badge in their daily standup.",
+        "outOfScope": "Do not change the number of days that counts as due soon or the badge labels.",
+        "reproduce": "1. Create a card with today's date as the due date.\n2. Look at the badge on the card.\n3. It says Overdue instead of Due soon."
+      },
+      "guide": {
+        "alex": "The badge comes from renderDueBadge in src/components/card.js, which asks getDueStatus in src/lib/dates.js for a status. That file also has startOfDay and daysBetween helpers. Look at what getDueStatus compares before it calls those helpers.",
+        "sarah": "Test with now at 00:01, at noon and at 23:59 on the due date. Then try the day before, the day after, two days ahead and three days ahead to check the boundaries of due soon and later.",
+        "daniel": "Dates and timestamps are not the same thing. A due date means a whole day, so 'is it late?' should be answered by comparing days. Comparing a date at midnight to a timestamp later in the day will make the whole day look like the past."
+      }
+    },
+    {
+      "id": "TF-104",
+      "difficulty": "medium",
+      "area": "Assignee filter",
+      "title": "Unassigned cards vanish from the board when everyone is shown",
+      "symptoms": "Cards with no owner are not visible in any column with the default view, and the column counts are too low. They only appear when Unassigned is chosen.",
+      "relevantFiles": ["src/store/selectors.js"],
+      "acceptanceCriteria": [
+        "With the filter set to everyone, unassigned cards are shown along with assigned ones.",
+        "Column counts include unassigned cards when everyone is shown.",
+        "Filtering by a person or by Unassigned still shows only the matching cards."
+      ],
+      "hiddenTest": "TF-104.test.js",
+      "hints": [
+        "Follow a card from the store to the screen. Which function decides whether a card is visible for the current filter?",
+        "The branch for the everyone filter is not letting every card through.",
+        "When the filter means everyone, the function should accept every card without looking at its assignee.",
+        "In matchesFilter, make the ALL branch return true instead of checking the assignee."
+      ],
+      "context": {
+        "affected": "New cards are created unassigned by default, so teams think their new cards were lost until they switch the filter.",
+        "priority": "High: people are creating duplicate cards because they cannot see the first ones.",
+        "outOfScope": "Do not change how the Unassigned or person filters work, and do not change the filter dropdown options.",
+        "reproduce": "1. Add a card without choosing an assignee.\n2. Leave the filter on Everyone.\n3. The card is missing and the column count did not go up."
+      },
+      "guide": {
+        "alex": "The board reads columns through selectColumnViews in src/store/selectors.js, which calls selectVisibleCards, which in turn uses the private matchesFilter. The filter values ALL and UNASSIGNED are defined in src/store/reducer.js. Start with matchesFilter and read each branch against its name.",
+        "sarah": "Build a board with a mix of assigned and unassigned cards. Check the visible cards and the counts for Everyone, a specific person, Unassigned, and a person who has no cards. Also try an archived unassigned card.",
+        "daniel": "A filter that means 'no restriction' should let everything through. When a derived value like a count or a list looks wrong, check the one function all views share instead of patching each screen. Name each branch's intent in plain words and test it."
+      }
+    },
+    {
+      "id": "TF-105",
+      "difficulty": "hard",
+      "area": "Moving cards and undo",
+      "title": "Undo after moving a card does nothing",
+      "symptoms": "After dragging a card to another column, pressing Ctrl+Z leaves the card where it is. Sometimes the board looks right but the undo history is clearly wrong.",
+      "relevantFiles": ["src/store/reducer.js"],
+      "acceptanceCriteria": [
+        "Undo after a move puts the card back in its original column and position.",
+        "Moving a card does not modify the previous state object.",
+        "Moving and reordering cards still works, and several moves can be undone one at a time."
+      ],
+      "hiddenTest": "TF-105.test.js",
+      "hints": [
+        "Compare the state you pass to the reducer before and after a move. Is the old state still the same?",
+        "The history stores a reference to the old columns, but the move changes the column objects inside that very array.",
+        "Build new column objects for the columns that change instead of editing the existing ones. This affects both the removal and the insertion step.",
+        "Make removeCard and insertCard return new columns (map over them and copy cardIds with filter or slice) and have moveCard use the result, so state.columns is never modified."
+      ],
+      "context": {
+        "affected": "Anyone who drags a card to the wrong column cannot recover with undo. Several users reported lost work after an accidental drop.",
+        "priority": "High: undo is one of the features in the release notes for Friday.",
+        "outOfScope": "Do not change which actions record history and do not change the undo shortcut or the drag-and-drop wiring in main.js.",
+        "reproduce": "1. Drag a card from To do to Done.\n2. Press Ctrl+Z (or Cmd+Z).\n3. The card stays in Done."
+      },
+      "guide": {
+        "alex": "The drop handler in src/main.js dispatches MOVE_CARD, which runs moveCard in src/store/reducer.js. That function uses two small helpers, removeCard and insertCard, and stores state.columns in history for UNDO. Read what each helper does to the arrays it receives.",
+        "sarah": "Move a card between columns, then undo, and check both columns. Reorder a card inside a single column, move two cards in a row and undo twice, and keep a reference to the state before the move to see if it changed.",
+        "daniel": "Copying an array with the spread operator makes a new outer array, but the objects inside are still shared. Mutating a shared object changes every place that holds it, including your saved history. A reducer must build new objects for everything it changes."
+      }
+    }
+  ]
+}

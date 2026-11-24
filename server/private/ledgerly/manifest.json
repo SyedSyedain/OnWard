@@ -1,0 +1,163 @@
+{
+  "simulationId": "ledgerly",
+  "simulationName": "Ledgerly",
+  "roleId": "backend-developer",
+  "description": "The backend of a group expense-splitting app: groups, shared expenses, member balances, settle-up payments and an activity feed.",
+  "issues": [
+    {
+      "id": "LG-101",
+      "difficulty": "easy",
+      "area": "Expenses",
+      "title": "Expenses of Rs 0.00 can be added to a group",
+      "symptoms": "Users see empty Rs 0.00 expenses cluttering the group's expense list and activity feed. They happen when someone taps Add with the amount left blank or typed as 0.",
+      "relevantFiles": ["src/services/expenseService.js"],
+      "acceptanceCriteria": [
+        "Adding an expense with an amount of zero paise is rejected with a ValidationError.",
+        "A rejected zero expense is not stored and does not change any balance.",
+        "Expenses with a positive whole-number amount are still added as before."
+      ],
+      "hiddenTest": "LG-101.test.js",
+      "hints": [
+        "Read the checks addExpense runs on the amount before it saves anything. Which values pass that check?",
+        "The amount check rejects fractions and negative numbers, but zero is neither of those, so it slips through.",
+        "Tighten the amount validation in addExpense so that only amounts greater than zero are accepted.",
+        "In addExpense, change the comparison on amountInPaise from < 0 to <= 0 so zero throws the same ValidationError."
+      ],
+      "context": {
+        "affected": "Every group that uses the app. Support gets a few reports a day about blank expenses that users then cannot explain to their friends.",
+        "priority": "Medium: annoying and visible, but balances are not wrong.",
+        "outOfScope": "Do not change how settle-up payments are validated, and do not change the split logic.",
+        "reproduce": "1. Create a group with two members.\n2. Add an expense with an amount of 0 paid by either member.\n3. Notice the expense is accepted and shows up in the expense list and activity feed."
+      },
+      "guide": {
+        "alex": "Expenses go through expenseService.addExpense, which validates the description, amount and payer before it resolves the split. Read the amount check near the top of that function and compare it with how settlementService validates its own amount. The tests in tests/expenses.test.js show which invalid inputs are already rejected.",
+        "sarah": "Try amounts of 0, 1, -1, 0.5 and a string such as '100'. Also confirm that after a rejected add, listExpenses is empty and every balance is still 0. Make sure a 1 paisa expense still works.",
+        "daniel": "This is a boundary bug. When you write a range check, ask whether each edge value (here zero) belongs inside or outside the allowed range. The condition looks right for the cases you thought of and still lets the one edge case through."
+      }
+    },
+    {
+      "id": "LG-102",
+      "difficulty": "easy",
+      "area": "Activity feed",
+      "title": "The activity feed shows the oldest events first",
+      "symptoms": "Opening a group, users see the day the group was created at the top of the feed and have to scroll down to find what just happened. Apps that only show the first 10 entries never show recent activity.",
+      "relevantFiles": ["src/services/activityService.js"],
+      "acceptanceCriteria": [
+        "The activity feed lists the most recent entry first.",
+        "When a limit is given, the feed returns the newest entries up to that limit.",
+        "The feed still contains every entry for the requested group and no other group."
+      ],
+      "hiddenTest": "LG-102.test.js",
+      "hints": [
+        "Compare the order of the entries list() returns with the order in which they were recorded.",
+        "Entries are appended to the end of the store, and list() returns them in that same order, which is oldest first.",
+        "Order the group's entries newest first before the limit is applied.",
+        "In list(), reverse (or sort by seq descending) the filtered entries before calling slice, so that limit keeps the newest ones."
+      ],
+      "context": {
+        "affected": "All users. The mobile home screen shows only the first few feed entries, so it currently looks frozen.",
+        "priority": "High: it is the first screen people see and the release is on Friday.",
+        "outOfScope": "Do not change what is recorded in the feed or the wording of the messages.",
+        "reproduce": "1. Create a group with three members.\n2. Add two expenses, 'Lunch' then 'Taxi'.\n3. List the group's activity and notice 'Taxi' is not first."
+      },
+      "guide": {
+        "alex": "Every service calls activityService.record, which appends entries to store.activity. The feed you see is built by activityService.list, which filters that array by group and applies the limit. Think about what order the array is in and where the slice happens relative to any ordering you add.",
+        "sarah": "Add several expenses and a settle-up in a group, then check the first and last entry. Try a limit of 1 and a limit larger than the number of entries. Create a second group and make sure its events never appear in the first group's feed.",
+        "daniel": "Lists keep the order things were added in unless you say otherwise. Whenever a screen shows 'latest first', the order has to be created on purpose, and the order of operations matters: if you cut the list down before sorting it, you keep the wrong end."
+      }
+    },
+    {
+      "id": "LG-103",
+      "difficulty": "medium",
+      "area": "Splitting",
+      "title": "Equal splits lose a paisa: Rs 1.00 between three people only adds up to Rs 0.99",
+      "symptoms": "When an amount does not divide evenly between members, the individual shares add up to less than the bill. Balances across the group no longer add up to zero, and a few paise disappear every time.",
+      "relevantFiles": ["src/lib/money.js", "src/services/expenseService.js"],
+      "acceptanceCriteria": [
+        "The shares of an equal split always add up to exactly the expense amount.",
+        "No member's share differs from another's by more than one paisa, and group balances add up to zero.",
+        "An amount that divides evenly is still split into identical shares."
+      ],
+      "hiddenTest": "LG-103.test.js",
+      "hints": [
+        "Add an expense of 100 paise split between 3 members and add up the shares stored on the expense.",
+        "Dividing 100 by 3 and rounding down gives 33 each, so one paisa is left over and nobody is charged for it.",
+        "After giving everyone the rounded-down share, hand out the remaining paise one at a time so the total matches.",
+        "In splitEqually, compute the remainder (total minus each times the number of members) and add one paisa to that many of the first members. splitByShares already does something similar."
+      ],
+      "context": {
+        "affected": "Every group with an uneven bill, which is most of them. The totals drift by a few paise and users no longer trust the balances.",
+        "priority": "High: the finance team flagged balances that do not sum to zero.",
+        "outOfScope": "Do not change splitByShares or how participants are validated.",
+        "reproduce": "1. Create a group with three members.\n2. Add an expense of 100 paise paid by the first member, split equally.\n3. Add up the splits: the total is 99 and the balances add up to 1, not 0."
+      },
+      "guide": {
+        "alex": "addExpense calls resolveSplits, which delegates the equal case to splitEqually in src/lib/money.js. The result is stored as expense.splits and applied to balances by balanceService.applyExpense. Compare splitEqually with splitByShares in the same file to see how the other splitter deals with amounts that do not divide evenly.",
+        "sarah": "Try 100 between 3, 101 between 3, 1 between 2 and 1 between 3, plus an exact case like 90000 between 3. For each, check that the shares add up to the amount and that the balances of all members add up to zero.",
+        "daniel": "Integer division throws away the remainder. When you divide money you have to decide who gets the leftover units, because the parts must always add back up to the whole. A good habit is to check the total after splitting, not just the individual parts."
+      }
+    },
+    {
+      "id": "LG-104",
+      "difficulty": "medium",
+      "area": "Settle up",
+      "title": "Settling up more than you owe flips the balance instead of being refused",
+      "symptoms": "A user who owed Rs 300 accidentally paid Rs 3,000 through settle up and the app accepted it. Now they show as being owed Rs 2,700 by the group.",
+      "relevantFiles": ["src/services/settlementService.js", "src/services/balanceService.js"],
+      "acceptanceCriteria": [
+        "Settling up for more than the payer currently owes is rejected with a ConflictError.",
+        "A member whose balance is zero or positive cannot settle up, and a rejected attempt records no settlement and changes no balance.",
+        "Settling up for exactly the amount owed (or less) still works."
+      ],
+      "hiddenTest": "LG-104.test.js",
+      "hints": [
+        "Settle more than a member owes and look at their balance afterwards. What sign does it have?",
+        "settleUp validates the amount and the members, but never compares the amount with what the payer actually owes.",
+        "Before recording the settlement, look up the payer's balance and reject the request if it exceeds the debt.",
+        "In settleUp, read group.balances[from]; if it is not negative, or if amountInPaise is greater than -group.balances[from], throw a ConflictError before storing anything."
+      ],
+      "context": {
+        "affected": "Users who mistype an amount. The wrong balance then confuses the whole group and is hard to undo.",
+        "priority": "Medium: it needs to be fixed before we promote settle up in the next release.",
+        "outOfScope": "Do not change how balances are calculated or how expenses are split. Keep the existing validation errors as they are.",
+        "reproduce": "1. Create a group with three members and add a 90,000 paise dinner paid by the first member.\n2. Have the second member settle up with the first for 100,000 paise.\n3. The payment is accepted and the second member's balance becomes positive."
+      },
+      "guide": {
+        "alex": "settleUp in settlementService validates the members and the amount, stores a settlement, then calls balanceService.applyTransfer. Balances live in group.balances, where a negative number means the member owes money. Look at what information settleUp already has access to before it records the payment.",
+        "sarah": "Using a member who owes 30000, try settling 29999, 30000 and 30001. Also try a member who is owed money and one with a balance of exactly zero. After each rejected attempt, check that listSettlements and the balances did not change.",
+        "daniel": "This is a missing business rule rather than a wrong line of code. Ask what must be true about the current state before an action is allowed, and check it before changing anything, so a rejected request leaves no trace."
+      }
+    },
+    {
+      "id": "LG-105",
+      "difficulty": "hard",
+      "area": "Expenses and balances",
+      "title": "Deleting an expense does not change anyone's balance",
+      "symptoms": "A user deleted a wrongly entered Rs 900 dinner and it disappeared from the list, but their friends still owe them Rs 300 each. The balances only look right again if someone adds a matching expense in the other direction.",
+      "relevantFiles": ["src/services/expenseService.js", "src/services/balanceService.js"],
+      "acceptanceCriteria": [
+        "Deleting an expense reverses its effect on every member's balance.",
+        "Deleting one expense leaves the effect of the other expenses in place.",
+        "Deleting an unknown or already deleted expense fails with a NotFoundError and changes no balance."
+      ],
+      "hiddenTest": "LG-105.test.js",
+      "hints": [
+        "Add an expense, delete it and compare the balances before and after. Which part of the system still remembers the expense?",
+        "Balances are stored on the group and updated when an expense is added. Deleting the expense removes it from the list but never undoes that update.",
+        "Deletion needs the opposite of applyExpense: credit back what each participant was charged and take away what the payer was credited.",
+        "Add a reverseExpense function to balanceService that does the opposite of applyExpense, export it, and call it from deleteExpense after the expense is found. The splits needed are already stored on the expense."
+      ],
+      "context": {
+        "affected": "Anyone who fixes a mistake by deleting an expense, so balances in many groups are quietly wrong and people are asking friends for money they do not owe.",
+        "priority": "High: wrong balances mean real money moving to the wrong people.",
+        "outOfScope": "Do not change the activity feed messages, and do not change how expenses are split.",
+        "reproduce": "1. Create a group with three members.\n2. Add a 90,000 paise dinner paid by the first member and note the balances.\n3. Delete the dinner expense.\n4. The expense is gone from the list, but the balances are unchanged."
+      },
+      "guide": {
+        "alex": "addExpense stores the expense with its computed splits and then calls balanceService.applyExpense, which updates group.balances. deleteExpense finds the stored expense and removes it, then records an activity entry. Compare the two functions step by step and check which of addExpense's side effects deleteExpense does not undo.",
+        "sarah": "Add two expenses with different payers, delete one, and check every member's balance against a hand calculation. Also delete an expense that was split between only some members, delete the same id twice, and delete an id that never existed.",
+        "daniel": "When the same fact is stored in two places (here the list of expenses and the running balances), every change has to update both. Whenever you can 'do' something, ask what its exact opposite is and whether the code for undoing it exists and is used."
+      }
+    }
+  ]
+}

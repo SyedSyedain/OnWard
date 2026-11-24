@@ -34,11 +34,12 @@ npm test         # runs the test suite
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/products` | List products (optional `?q=` search) |
+| GET | `/products` | List products (optional `?q=` search, or `?inStock=true`) |
 | POST | `/products` | Create a product |
 | GET | `/carts/:cartId` | View a cart and its total |
 | POST | `/carts/:cartId/items` | Add a product to a cart |
 | POST | `/orders` | Check out a cart |
+| POST | `/orders/:orderId/cancel` | Cancel an order and restock its items |
 
 ## Conventions
 

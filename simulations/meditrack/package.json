@@ -1,0 +1,13 @@
+{
+  "name": "meditrack",
+  "version": "1.0.0",
+  "description": "MediTrack: the patient web app of a clinic, used as an OnWard engineering simulation.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

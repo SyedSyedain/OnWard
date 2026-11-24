@@ -1,0 +1,13 @@
+{
+  "name": "pulsewave",
+  "version": "1.0.0",
+  "description": "Pulsewave: the web player of a music streaming service, used as an OnWard engineering simulation.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

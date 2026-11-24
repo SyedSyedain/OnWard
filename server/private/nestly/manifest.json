@@ -1,0 +1,163 @@
+{
+  "simulationId": "nestly",
+  "simulationName": "Nestly",
+  "roleId": "frontend-developer",
+  "description": "The website of a home-rental marketplace with listing cards, search filters, stay date pricing, favourites and reviews.",
+  "issues": [
+    {
+      "id": "NS-101",
+      "difficulty": "easy",
+      "area": "Price display",
+      "title": "Nightly prices like 12500 are hard to read without commas",
+      "symptoms": "Guests say prices such as 4500 or 12000 look like a run of digits and are easy to misread. Support has had a few complaints about it.",
+      "relevantFiles": ["src/lib/format.js"],
+      "acceptanceCriteria": [
+        "A five-digit price such as 12500 is displayed with a thousands separator (12,500).",
+        "A four-digit nightly price on a listing card, such as 4500, is displayed as ₹4,500.",
+        "Prices below one thousand are displayed exactly as before (for example ₹800)."
+      ],
+      "hiddenTest": "NS-101.test.js",
+      "hints": [
+        "Every price on the site goes through one formatting function. Find it and look at what string it builds.",
+        "The function rounds the number and puts the rupee sign in front, but it never groups the digits.",
+        "Format the number with a locale-aware method so digits are grouped, then prefix the rupee sign.",
+        "Use Math.round(amount).toLocaleString('en-IN') (or the equivalent) inside the template string instead of the bare rounded number."
+      ],
+      "context": {
+        "affected": "Every guest browsing Nestly sees the unformatted prices; it makes the site look unpolished and causes misreads on expensive listings.",
+        "priority": "Low: cosmetic, but it is in the first thing guests see, so please fix it this sprint.",
+        "outOfScope": "Do not change currency, rounding rules or how totals are calculated.",
+        "reproduce": "1. Open the search results page.\n2. Look at the price on the 'Family Villa in Alibaug' card.\n3. Notice it reads ₹12000 instead of ₹12,000."
+      },
+      "guide": {
+        "alex": "Start in src/lib/format.js. formatPrice is used by listingCard.js, bookingWidget.js and listingDetail.js, so one change there reaches every screen. Check how the other components call it before editing.",
+        "sarah": "Try 0, 999, 1000, 4500, 12500 and a larger value such as 99999. Check the card, the detail page and the booking breakdown all show the same format. Make sure small prices do not gain a stray comma.",
+        "daniel": "Numbers are just numbers until you turn them into text. Converting to a string with no formatting gives plain digits. Browsers and Node have built-in locale formatting that handles grouping, so you rarely need to write it by hand."
+      }
+    },
+    {
+      "id": "NS-102",
+      "difficulty": "easy",
+      "area": "Accessibility",
+      "title": "Screen reader users cannot tell what the heart button does or whether a stay is saved",
+      "symptoms": "An accessibility audit found that the heart on each listing card is announced as just a button with a symbol, and nothing says whether the stay is already saved.",
+      "relevantFiles": ["src/components/listingCard.js"],
+      "acceptanceCriteria": [
+        "The favourite button has aria-pressed=\"false\" when the listing is not saved.",
+        "The favourite button has aria-pressed=\"true\" when the listing is saved.",
+        "The favourite button has an aria-label that includes the listing title, and still keeps its data-action and data-id attributes."
+      ],
+      "hiddenTest": "NS-102.test.js",
+      "hints": [
+        "Look at the button markup inside the listing card. What would a screen reader announce for it?",
+        "The button only contains a heart symbol. It has no accessible name and no pressed state.",
+        "Add an aria-label that names the listing and an aria-pressed attribute driven by the isFavourite prop.",
+        "Add aria-pressed=\"${isFavourite}\" and aria-label=\"Save ${escapeHtml(listing.title)} to favourites\" (the label wording is up to you) to the button, escaping the title."
+      ],
+      "context": {
+        "affected": "Blind and low-vision guests using screen readers cannot use favourites with confidence. It is also flagged in our accessibility audit.",
+        "priority": "Medium: needed to close the open audit finding before next month's review.",
+        "outOfScope": "Do not change the heart styling, the icon characters or the favourites state logic.",
+        "reproduce": "1. Open the search results page with a screen reader running.\n2. Move focus to the heart on a listing card.\n3. Notice it is announced without a name or a pressed state."
+      },
+      "guide": {
+        "alex": "The button is rendered in listingCard() in src/components/listingCard.js. main.js reads data-action and data-id from it, so those attributes must stay. The isFavourite prop already tells you the saved state.",
+        "sarah": "Render the card with isFavourite true and false and read the button tag. Check a title containing quotes or angle brackets still produces valid markup. Confirm data-action and data-id are still present.",
+        "daniel": "Assistive technology reads an element's accessible name and state, not its look. An icon-only button needs a text label, and a toggle needs a state attribute such as aria-pressed so users know which way it is set. Remember anything built from user text still needs escaping."
+      }
+    },
+    {
+      "id": "NS-103",
+      "difficulty": "medium",
+      "area": "Search filters",
+      "title": "Selecting several amenities shows homes that only have one of them",
+      "symptoms": "Guests who tick Pool and Kitchen still see listings that have only a pool or only a kitchen. The more boxes they tick, the more results they get.",
+      "relevantFiles": ["src/state/selectors.js"],
+      "acceptanceCriteria": [
+        "Selecting two amenities returns only listings that have both.",
+        "Selecting amenities that no single listing has all of returns no listings.",
+        "Selecting one amenity, or none, behaves as before."
+      ],
+      "hiddenTest": "NS-103.test.js",
+      "hints": [
+        "Follow the filters from the form to the function that decides which listings stay in the results.",
+        "Think about the meaning of ticking more boxes: each one should narrow results, but the current check widens them.",
+        "A listing should pass the amenity filter only when every selected amenity is in its amenity list.",
+        "In filterListings, replace the check that at least one wanted amenity is present with one that requires all wanted amenities to be present (Array.prototype.every)."
+      ],
+      "context": {
+        "affected": "Guests with must-have amenities (for example a pool and parking) waste time scrolling through unsuitable homes; it hurts search conversion.",
+        "priority": "High: search is our main funnel and this is a top support complaint.",
+        "outOfScope": "Do not change price, guest-count or text filters, sorting or pagination.",
+        "reproduce": "1. Open the search results page.\n2. Tick the Pool and Kitchen checkboxes.\n3. Notice listings with only one of the two are still shown."
+      },
+      "guide": {
+        "alex": "Filter changes go through the 'filters/set' action in reducer.js, then filterListings in src/state/selectors.js runs over the full list. The amenity rule is one of several early-return checks in that function. Read all of them to see how they combine.",
+        "sarah": "Use the sample data: ['pool','kitchen'] should give only listings having both, ['pool','parking'] may give none in a small data set. Also try one amenity, an empty list, and an amenity name nobody has.",
+        "daniel": "This is the difference between 'any of' and 'all of'. Array methods like some and every express those two ideas. Before changing code, say out loud what a user expects when they add a filter: should results grow or shrink?"
+      }
+    },
+    {
+      "id": "NS-104",
+      "difficulty": "medium",
+      "area": "Stay dates and pricing",
+      "title": "A 3-night stay is shown and charged as 4 nights",
+      "symptoms": "Guests who pick 10 March to 13 March see '4 nights' and a total that includes one night too many. Support has refunded several bookings.",
+      "relevantFiles": ["src/lib/dates.js", "src/lib/pricing.js"],
+      "acceptanceCriteria": [
+        "The night count between check-in and check-out equals the number of nights stayed (10 to 13 March is 3 nights, a one-night stay is 1).",
+        "The quote and booking widget show the right night count, subtotal, service fee and total for that stay.",
+        "Invalid stays (same-day or missing dates) still produce no quote and a night count of 0 for missing dates."
+      ],
+      "hiddenTest": "NS-104.test.js",
+      "hints": [
+        "Compare the night count shown on the booking widget with the number of nights you would count on a calendar. Which function produces that number?",
+        "A stay is priced per night slept, which is the gap between check-in day and check-out day. The check-out day itself is not a night.",
+        "The night count function adds an extra day to the difference between the two dates.",
+        "In nightsBetween, remove the '+ 1' after the rounded day difference so it returns just the difference in days."
+      ],
+      "context": {
+        "affected": "Every guest who books is overcharged by one night, and hosts see wrong night counts. It is a trust and refund problem.",
+        "priority": "High: guests are being overcharged and it blocks the Friday release.",
+        "outOfScope": "Do not change the service-fee rate, cleaning fee handling or date validation rules.",
+        "reproduce": "1. Open any listing detail page.\n2. Choose check-in 2026-03-10 and check-out 2026-03-13 with 2 guests.\n3. Notice the widget says 4 nights and the subtotal is four nights' rent."
+      },
+      "guide": {
+        "alex": "The booking widget calls quoteStay in src/lib/pricing.js, which validates the stay and then calls nightsBetween in src/lib/dates.js. Subtotal, service fee and total all derive from that one number. Read dates.js first.",
+        "sarah": "Try 10 to 11 March (1 night), 10 to 13 March (3 nights), a stay across a month end such as 27 Feb to 2 March, and a leap-year range. Also confirm same-day checkout and empty dates still fail validation.",
+        "daniel": "This is the classic fence-post (off-by-one) question: counting nights is counting the gaps between days, not the days themselves. Test with the smallest possible case (one night) because that is where an extra +1 or -1 is most obvious."
+      }
+    },
+    {
+      "id": "NS-105",
+      "difficulty": "hard",
+      "area": "Favourites",
+      "title": "Saved stays do not appear or disappear in the favourites list until the page is reloaded",
+      "symptoms": "After tapping the heart, the favourites list stays the same until a refresh. Sometimes removing a favourite seems to do nothing, and the list lags one tap behind.",
+      "relevantFiles": ["src/state/reducer.js", "src/state/selectors.js"],
+      "acceptanceCriteria": [
+        "Toggling a favourite does not modify the previous state: the earlier state's favourites list is unchanged and a new list is returned.",
+        "The favourites list derived from the state is correct after each add and remove.",
+        "Other state (such as filters) is preserved and subscribers are notified on every toggle."
+      ],
+      "hiddenTest": "NS-105.test.js",
+      "hints": [
+        "Which function changes the favourites list, and which function reads it to build the saved-stays view? Look at both.",
+        "The reducer changes the existing favourites array in place instead of returning a new one, so anything that compares or caches by that array does not see a change.",
+        "Build a new favourites array on every toggle (one without the id, or one with the id added) and put that in the returned state.",
+        "In the 'favourites/toggle' case, use filter to remove an id or [...state.favourites, id] to add it, rather than push and splice on state.favourites. The selector then sees a new array and recomputes."
+      ],
+      "context": {
+        "affected": "Guests who save stays see a stale list, which makes favourites feel broken and loses repeat bookings.",
+        "priority": "Medium: favourites is a top-5 feature, but a reload works around it.",
+        "outOfScope": "Do not remove the favourites cache or change how favourites are stored or labelled; keep the reducer pure.",
+        "reproduce": "1. Open the search page and save two listings with the heart.\n2. Open the saved-stays view and note the list.\n3. Remove one favourite and check the list: it is out of date until you reload."
+      },
+      "guide": {
+        "alex": "The 'favourites/toggle' case lives in src/state/reducer.js and selectFavouriteListings in src/state/selectors.js builds the visible list. The selector caches its result per favourites array. Read both and ask what the cache assumes about the array.",
+        "sarah": "Keep a reference to the state before a toggle and check that its favourites list did not change. Toggle the same id twice, add three ids and remove the middle one, and check the derived list after each step.",
+        "daniel": "Reducers should be pure: never change the objects you were given, return new ones. Caches and change detection often compare references, so changing something in place makes them miss updates. Think about what 'same array' tells a cache."
+      }
+    }
+  ]
+}

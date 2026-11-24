@@ -1,0 +1,163 @@
+{
+  "simulationId": "libris",
+  "simulationName": "Libris",
+  "roleId": "backend-developer",
+  "description": "The backend of a college library system: catalogue, members, checkouts, returns with late fines, renewals and a holds queue.",
+  "issues": [
+    {
+      "id": "LB-101",
+      "difficulty": "easy",
+      "area": "Borrowing limits",
+      "title": "Members can borrow one more book than their limit allows",
+      "symptoms": "Students with a limit of 3 books are walking out with 4. The front desk only notices when the shelf audit comes up short.",
+      "relevantFiles": ["src/services/loanService.js", "src/services/memberService.js"],
+      "acceptanceCriteria": [
+        "A member who already has as many active loans as their borrowing limit is refused another checkout with a ConflictError.",
+        "A member can still borrow up to exactly their limit.",
+        "After returning a book, a member who was at the limit can borrow again."
+      ],
+      "hiddenTest": "LB-101.test.js",
+      "hints": [
+        "Read the checks checkout performs before it creates a loan. Which one decides whether the member has borrowed too much?",
+        "The limit check compares the number of active loans with the limit, but it lets the member through one step too late.",
+        "A member with exactly borrowLimit active loans must be refused. Adjust the comparison so that this case is rejected.",
+        "Change the comparison in checkout from 'activeLoans.length > member.borrowLimit' to one that also rejects the equal case ('>=')."
+      ],
+      "context": {
+        "affected": "Every student and faculty member can exceed their limit by one book. The library lost track of two reference books last month because of it.",
+        "priority": "Medium: no data is corrupted, but the audit is already embarrassing for the librarian.",
+        "outOfScope": "Do not change the default limits in policy.js or how members are registered.",
+        "reproduce": "1. Register a student with a limit of 3.\n2. Check out three different books to them.\n3. Try to check out a fourth book.\n4. Notice that the fourth checkout succeeds."
+      },
+      "guide": {
+        "alex": "Start in src/services/loanService.js and read checkout from the top. It gets the member's active loans through memberService.listActiveLoans and then compares their count with member.borrowLimit before looking for a free copy. Only that comparison decides who is stopped.",
+        "sarah": "Try a member with a limit of 2 and borrow one, two and then three books, and see which attempt is refused. Also check the same flow with a limit of 1, and check that returning a book frees one slot.",
+        "daniel": "This is a classic off-by-one error: a boundary check that is wrong by exactly one. Ask yourself what the count is at the moment the member is allowed to borrow their last book, and what it is when they have just reached the limit."
+      }
+    },
+    {
+      "id": "LB-102",
+      "difficulty": "easy",
+      "area": "Late fines",
+      "title": "Books returned on the due date are charged a late fine",
+      "symptoms": "Students who bring a book back on the very day it is due are being charged Rs 2.00. Early returns are fine.",
+      "relevantFiles": ["src/services/fineService.js"],
+      "acceptanceCriteria": [
+        "A book returned on its due date has a fine of zero.",
+        "A book returned before its due date has a fine of zero.",
+        "A book returned one day late is fined for exactly one day."
+      ],
+      "hiddenTest": "LB-102.test.js",
+      "hints": [
+        "Compare what calculateFine returns for a return on the due date with one the day before. Where do the two paths diverge?",
+        "Returning on the due date is not late, but the function treats zero days late as if it were one day late.",
+        "Only a positive number of days late should be charged. Zero must produce no fine.",
+        "The early-exit condition 'daysLate < 0' misses the zero case. Make it also cover 0, after which the minimum-of-one-day rule is no longer needed."
+      ],
+      "context": {
+        "affected": "Anyone who returns a book exactly on its due date, which is a large share of all returns. The help desk is refunding fines by hand.",
+        "priority": "High: students are being charged money they do not owe and complaints reach the dean's office.",
+        "outOfScope": "Do not change the fine rate, and do not add a cap to fines in this ticket.",
+        "reproduce": "1. Check out a book on 2024-03-01 (due 2024-03-15).\n2. Return it on 2024-03-15.\n3. Look at the fine in the return result.\n4. Notice it is Rs 2.00 instead of zero."
+      },
+      "guide": {
+        "alex": "Returns go through loanService.returnCopy, which stores the result of calculateFine from src/services/fineService.js on the loan. The whole rule lives in that one small function, so read how it turns the due date and return date into a number of days.",
+        "sarah": "Test three dates around the due date: the day before, the due date itself and the day after. Also try a return many days late to make sure the daily rate is still applied for every day.",
+        "daniel": "This is a boundary condition bug. A day count of zero means 'not late', but a check written for 'less than zero' lets exactly zero fall through into the charging path. Always test the value sitting right on the edge."
+      }
+    },
+    {
+      "id": "LB-103",
+      "difficulty": "medium",
+      "area": "Late fines",
+      "title": "Late fines can grow far beyond the price of the book",
+      "symptoms": "A student who forgot a Rs 10 pocket book for a whole semester was billed over Rs 200. Library policy says a fine never exceeds the replacement price.",
+      "relevantFiles": ["src/services/fineService.js", "src/services/loanService.js"],
+      "acceptanceCriteria": [
+        "The fine for a late return never exceeds the price of the book.",
+        "The capped fine is the amount stored on the loan and returned from the return call.",
+        "A fine that is below the price of the book is still charged in full."
+      ],
+      "hiddenTest": "LB-103.test.js",
+      "hints": [
+        "Return a cheap book months late and compare the fine with the book's price. Which function produces the fine, and what does it know about the book?",
+        "calculateFine receives the book, but the amount it returns depends only on the number of days late.",
+        "After working out days late times the daily rate, limit the result to the book's priceInPaise.",
+        "Wrap the final amount in Math.min(..., book.priceInPaise) inside calculateFine so that loanService stores the capped value."
+      ],
+      "context": {
+        "affected": "Members who keep a cheap book out for a long time. Finance has had to write off several large fines that broke the written policy.",
+        "priority": "Medium: it only affects long-overdue books, but each case is a dispute.",
+        "outOfScope": "Do not change the daily fine rate or the rule for returns on the due date.",
+        "reproduce": "1. Check out the Rs 10 book 'Pocket Poems' on 2024-03-01.\n2. Return it on 2024-06-01.\n3. Read the fine in the return result.\n4. Notice it is far larger than Rs 10."
+      },
+      "guide": {
+        "alex": "returnCopy in src/services/loanService.js loads the book and passes it to calculateFine in src/services/fineService.js, then stores the number on the loan. Look at what calculateFine does with its second argument.",
+        "sarah": "Use the cheap book (Rs 10) and return it 5, 6 and 60 days late, around the point where the fine equals the price. Also confirm that an expensive book returned a few days late is charged the normal daily amount.",
+        "daniel": "This is a missing upper bound. A rule that grows with time needs a ceiling when the business has one. Think about which two numbers should be compared and which one wins when they disagree."
+      }
+    },
+    {
+      "id": "LB-104",
+      "difficulty": "medium",
+      "area": "Renewals",
+      "title": "Renewing early makes the loan shorter instead of longer",
+      "symptoms": "A student renewed a book three days before the deadline and the new due date came out earlier than expected. Renewing on the last day looks correct.",
+      "relevantFiles": ["src/services/loanService.js", "src/lib/dates.js"],
+      "acceptanceCriteria": [
+        "Renewing before the due date moves the due date seven days after the old due date.",
+        "A second early renewal extends from the already extended due date.",
+        "Renewing on the due date still adds seven days and counts as one renewal."
+      ],
+      "hiddenTest": "LB-104.test.js",
+      "hints": [
+        "Renew the same loan on several different days and compare the new due dates. What do the results depend on?",
+        "The new due date depends on the day the member clicked renew rather than on the old due date.",
+        "The renewal period should be added to the current due date of the loan, not to today's date.",
+        "In renew, call addDays with loan.dueOn instead of today as the starting date."
+      ],
+      "context": {
+        "affected": "Members who renew early, which is what the reminder emails tell them to do. They lose the days between renewing and the old deadline.",
+        "priority": "Medium: members are not charged for it directly but then trip over unexpected due dates and fines.",
+        "outOfScope": "Do not change the renewal limit, the length of the renewal period or the refusal to renew overdue loans.",
+        "reproduce": "1. Check out a book on 2024-03-01 (due 2024-03-15).\n2. Renew it on 2024-03-10.\n3. Read the new due date.\n4. Notice it is 2024-03-17 instead of 2024-03-22."
+      },
+      "guide": {
+        "alex": "Open renew in src/services/loanService.js. It runs a series of guards (returned, overdue, renewal limit, waiting holds) and finally updates loan.dueOn using addDays from src/lib/dates.js. Work out which date is passed in as the starting point.",
+        "sarah": "Renew the same loan on its first day, midway and on the due date itself, and compare each resulting due date. Then renew a second time and check the date again. Renewal on the due date alone can hide the problem.",
+        "daniel": "This is a wrong-base-date error: the arithmetic is right but it starts from the wrong value. When extending a deadline, ask what the extension is relative to, the moment of the request or the existing deadline."
+      }
+    },
+    {
+      "id": "LB-105",
+      "difficulty": "hard",
+      "area": "Holds queue",
+      "title": "Returned books are not kept for the member waiting longest",
+      "symptoms": "Members with a hold keep finding the book back on the open shelf, where anyone can take it, and the hold stays stuck in the queue. Sometimes the member who joined the queue last is the one who gets notified.",
+      "relevantFiles": ["src/services/loanService.js", "src/services/holdService.js"],
+      "acceptanceCriteria": [
+        "When a book is returned and a member is waiting for it, the copy is set aside on the holds shelf and the hold becomes ready.",
+        "When several members are waiting, the one who placed their hold first gets the copy and the others stay in the queue.",
+        "When nobody is waiting, a returned copy goes back on the open shelf."
+      ],
+      "hiddenTest": "LB-105.test.js",
+      "hints": [
+        "Place two holds on a borrowed book, return it, and inspect the copy and both holds. What state are they in, and which service should have changed them?",
+        "Two things are wrong: the return path never offers the copy to the holds queue, and the function that picks the next hold does not pick the oldest one.",
+        "In returnCopy, ask the hold service for the next waiting hold and reserve the copy for it, otherwise put the copy on the shelf. Also check how nextWaitingHold chooses between holds.",
+        "In returnCopy use holds.nextWaitingHold(loan.bookId); if it returns a hold call holds.reserveCopy(hold, copy), else set copy.status to 'available'. In nextWaitingHold the comparison must select the lowest seq, not the highest."
+      ],
+      "context": {
+        "affected": "Everybody who reserves a popular book. The holds feature is effectively not working and the librarians are hand-carrying books to the right people.",
+        "priority": "High: the holds feature is the main selling point of the next term's rollout and is promised for Monday.",
+        "outOfScope": "Do not change how holds are placed or cancelled, and do not change renewal rules.",
+        "reproduce": "1. Check out the only copy of a book to member A.\n2. Place a hold for member B, then one for member C.\n3. Return the book.\n4. Notice the copy is back on the open shelf and neither hold is ready."
+      },
+      "guide": {
+        "alex": "Follow a return through returnCopy in src/services/loanService.js to the end, where the copy status is set. The queue lives in src/services/holdService.js, which already has helpers for picking the next hold and setting a copy aside. Check who calls them and how the next hold is chosen.",
+        "sarah": "Return a book with no holds, with one hold and with two holds placed on different days. After each return check the copy status, each hold status and the queue order. Then check that the first member can actually check the copy out.",
+        "daniel": "This bug has two parts: a step that is never wired in, and a selection rule that is backwards. A queue should be first in, first out. When you pick an item by comparing a number, check carefully whether you keep the smallest or the largest."
+      }
+    }
+  ]
+}

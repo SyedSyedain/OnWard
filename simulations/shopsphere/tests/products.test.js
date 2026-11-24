@@ -22,3 +22,17 @@ test('search is case-insensitive', () => {
 
   assert.deepEqual(results.map((product) => product.id), ['p-1']);
 });
+
+test('lists every product when no filter is given', () => {
+  const { productService } = createTestServices();
+  const results = productService.listProducts();
+
+  assert.deepEqual(results.map((product) => product.id), ['p-1', 'p-2']);
+});
+
+test('in-stock listing includes products that have stock', () => {
+  const { productService } = createTestServices();
+  const results = productService.listProducts({ inStockOnly: true });
+
+  assert.ok(results.some((product) => product.id === 'p-1'));
+});

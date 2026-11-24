@@ -1,0 +1,175 @@
+{
+  "simulationId": "ridewise",
+  "simulationName": "Ridewise",
+  "roleId": "backend-developer",
+  "description": "The backend of a city ride-hailing service: fare estimates, ride booking, driver matching, cancellations and promo codes.",
+  "issues": [
+    {
+      "id": "RW-101",
+      "difficulty": "easy",
+      "area": "Ride lifecycle",
+      "title": "Riders can cancel rides that are already completed",
+      "symptoms": "Support sees completed trips flipping to 'cancelled' after the fact, sometimes with a cancellation fee added to a trip the rider already paid for.",
+      "relevantFiles": [
+        "src/services/rideService.js"
+      ],
+      "acceptanceCriteria": [
+        "Cancelling a completed ride is rejected with a ConflictError.",
+        "A rejected cancellation leaves the completed ride unchanged (status, cancellation time and fee).",
+        "Rides in the requested or accepted status can still be cancelled."
+      ],
+      "hiddenTest": "RW-101.test.js",
+      "hints": [
+        "Look at cancelRide and compare its checks with the other ride actions such as startRide and completeRide.",
+        "cancelRide only refuses rides that are already cancelled. Every other status, including completed, is let through.",
+        "The module already defines which statuses may move to 'cancelled'. cancelRide should respect that rule before it changes anything.",
+        "Call assertTransition(ride, 'cancelled') at the start of cancelRide instead of only checking for the cancelled status."
+      ],
+      "context": {
+        "affected": "Finance is reconciling refunds against trips that were cancelled after completion.",
+        "priority": "High: it corrupts completed-trip records and can charge riders wrongly.",
+        "outOfScope": "Do not change the cancellation fee amount or the free window.",
+        "reproduce": "1. Book a ride and accept it. 2. Start it, then complete it. 3. Call cancelRide on the same ride. 4. Notice the ride is now cancelled and may carry a fee."
+      },
+      "guide": {
+        "alex": "Start in rideService.js. The TRANSITIONS table and assertTransition guard accepting, starting and completing. Trace what cancelRide does before it mutates the ride and compare it with those functions.",
+        "sarah": "Try cancelling a ride in every status: requested, accepted, started, completed, cancelled. Check the ride object afterwards, not only whether an error was thrown.",
+        "daniel": "This is a missing guard clause: a state machine only protects you if every action checks that the current state allows it. Ask which states should be allowed to reach 'cancelled'."
+      }
+    },
+    {
+      "id": "RW-102",
+      "difficulty": "easy",
+      "area": "Cancellation fees",
+      "title": "Riders are charged a cancellation fee at exactly the 2-minute mark",
+      "symptoms": "Riders who cancel right on the 2-minute mark after a driver accepts are charged a fee, even though the app promises free cancellation within 2 minutes.",
+      "relevantFiles": [
+        "src/services/fareService.js",
+        "src/config.js"
+      ],
+      "acceptanceCriteria": [
+        "Cancelling exactly 120 seconds after acceptance is free.",
+        "Cancelling even a moment after 120 seconds is charged the cancellation fee.",
+        "A ride cancelled at exactly 120 seconds carries a cancellation fee of 0."
+      ],
+      "hiddenTest": "RW-102.test.js",
+      "hints": [
+        "Open cancellationFee and look at how it decides whether the rider is still inside the free window.",
+        "The window is meant to include its last second, but the comparison treats 120 seconds as already outside it.",
+        "Think about which comparison operator includes the boundary value, and change that one comparison.",
+        "In cancellationFee, change the strict less-than against freeWindowSeconds to less-than-or-equal."
+      ],
+      "context": {
+        "affected": "A few hundred riders a week sit on the boundary and complain on social media.",
+        "priority": "Medium: a trust issue with riders, not a revenue emergency.",
+        "outOfScope": "Do not change the fee amount or the length of the free window in config.js.",
+        "reproduce": "1. Book a ride and accept it at time T. 2. Cancel it at T + 120 seconds. 3. Observe a fee of 5000 paise. 4. Cancelling at T + 119 seconds is free."
+      },
+      "guide": {
+        "alex": "Look at cancellationFee in fareService.js and at CANCELLATION in config.js. rideService.cancelRide calls the function with the accept and cancel timestamps in milliseconds.",
+        "sarah": "Test 119, 120 and 121 seconds, plus 120 seconds and 1 millisecond. Also check a ride that was never accepted.",
+        "daniel": "This is a boundary (off-by-one) bug. When a rule says 'within N', decide whether N itself is inside, then pick the operator that matches. Write the boundary values down before coding."
+      }
+    },
+    {
+      "id": "RW-103",
+      "difficulty": "medium",
+      "area": "Fare estimates",
+      "title": "Surge pricing barely changes the fare on long trips",
+      "symptoms": "During a surge, riders on long trips pay almost the same as normal while the 2x banner is showing. Ops says revenue during surge is far below forecast.",
+      "relevantFiles": [
+        "src/services/fareService.js"
+      ],
+      "acceptanceCriteria": [
+        "With a surge multiplier, the whole fare (base, distance and time charges) is multiplied.",
+        "A short trip under surge is priced on base, distance and time together.",
+        "Fares without surge and the minimum fare behave as before."
+      ],
+      "hiddenTest": "RW-103.test.js",
+      "hints": [
+        "Read estimateFare from top to bottom and see which amounts the surge multiplier is applied to.",
+        "The multiplier is only applied to the base fare. The distance and time charges are added afterwards without it.",
+        "Add up the three charges first, then apply the multiplier to that subtotal, round once, and still enforce the minimum fare.",
+        "Compute subtotal = base + distance + time, then surged = Math.round(subtotal * surgeMultiplier), then take the larger of surged and the minimum fare."
+      ],
+      "context": {
+        "affected": "Every surged trip is undercharged, and longer trips are undercharged the most.",
+        "priority": "High: it costs revenue on every busy evening.",
+        "outOfScope": "Do not change the per-km, per-minute or minimum fare values, or the validation rules.",
+        "reproduce": "1. Estimate a 10 km, 20 minute trip with no surge: 20000 paise. 2. Estimate the same trip with a 1.5 multiplier. 3. Expect 30000 paise, get 22500."
+      },
+      "guide": {
+        "alex": "estimateFare in fareService.js is the only function involved. requestRide in rideService.js calls it and stores the total as the ride fare.",
+        "sarah": "Try surge 1, 1.5 and 2 with a long and a very short trip. Work out the expected number by hand first and watch the rounding. A tiny trip with no surge should still hit the minimum fare.",
+        "daniel": "Order of operations matters: a multiplier should apply to the combined amount, not part of it. Be careful where rounding happens."
+      }
+    },
+    {
+      "id": "RW-104",
+      "difficulty": "medium",
+      "area": "Promo codes",
+      "title": "The same rider can use a one-time promo code again",
+      "symptoms": "Some riders are getting the welcome discount on several rides. It seems to happen when they type the code in lower case.",
+      "relevantFiles": [
+        "src/services/promoService.js"
+      ],
+      "acceptanceCriteria": [
+        "A promo typed in lower case cannot be redeemed twice by the same rider.",
+        "Changing the case or spacing of an already used code does not allow another redemption.",
+        "Different riders can still redeem the promo once each."
+      ],
+      "hiddenTest": "RW-104.test.js",
+      "hints": [
+        "Look at what redeem stores when it succeeds and what it compares when it checks for an earlier use.",
+        "Codes are looked up case-insensitively, but the redemption is recorded with the code exactly as the rider typed it, while the check compares against the stored promo code.",
+        "Record the redemption under the same normalised code that the duplicate check uses.",
+        "In redeem, push promo.code (not the typed code) into store.redemptions."
+      ],
+      "context": {
+        "affected": "Marketing noticed budget burning faster than expected on the welcome promo.",
+        "priority": "High: each extra use is real discount money.",
+        "outOfScope": "Do not change how discounts are calculated or the expiry rules.",
+        "reproduce": "1. Redeem 'save20' for rider r-1. 2. Redeem 'save20' again for r-1. 3. Notice the second redemption succeeds. 4. Try 'SAVE20' as well."
+      },
+      "guide": {
+        "alex": "promoService.redeem does the lookup with findPromo, then checks store.redemptions. Compare the value used for the lookup, the value written to redemptions and the value compared.",
+        "sarah": "Redeem with 'SAVE20', 'save20', ' Save20 ' for the same rider and a second rider, in different orders. Inspect store.redemptions after each call.",
+        "daniel": "This is a normalisation mismatch: the same identifier written two ways. Pick one canonical form and use it everywhere you store or compare it."
+      }
+    },
+    {
+      "id": "RW-105",
+      "difficulty": "hard",
+      "area": "Driver matching",
+      "title": "Drivers stay unavailable after cancelled rides and get matched from old locations",
+      "symptoms": "Dispatch says drivers vanish from the pool after a rider cancels, and drivers who just finished a trip get requests as if they were still at the pickup spot.",
+      "relevantFiles": [
+        "src/services/rideService.js",
+        "src/services/driverService.js"
+      ],
+      "acceptanceCriteria": [
+        "Cancelling an accepted ride makes its driver available again.",
+        "After a completed ride the driver's location is the drop-off point, so matching uses their real position.",
+        "A driver on an active ride is not matched to another ride until that ride ends."
+      ],
+      "hiddenTest": "RW-105.test.js",
+      "hints": [
+        "Follow a driver through acceptRide, completeRide and cancelRide and check the driver's status and location after each.",
+        "Two things go wrong: cancelRide never gives the driver back, and releaseDriver accepts a location that it then ignores.",
+        "cancelRide must release the driver of an accepted ride, and releaseDriver must record the new location when one is passed in.",
+        "Call driverService.releaseDriver(ride.driverId) in cancelRide when the ride has a driver, and in releaseDriver set driver.location to the given location when there is one."
+      ],
+      "context": {
+        "affected": "Dispatch capacity looks lower than it is and pickup ETAs are wrong, so riders wait longer.",
+        "priority": "High: it hurts matching quality in every busy period.",
+        "outOfScope": "Do not change the matching distance calculation or the ride status rules.",
+        "reproduce": "1. Accept a ride so the only driver becomes busy. 2. Cancel the ride. 3. Book another ride: no driver is available. 4. Complete a trip and check the driver's location."
+      },
+      "guide": {
+        "alex": "Read driverService.js first: findNearestAvailable uses status and location. Then follow where rideService.js calls markBusy and releaseDriver, and where it does not.",
+        "sarah": "Use a store with one driver, then with two. Cancel an accepted ride, complete a ride far from the pickup and then request a ride near the drop-off. Check getDriver after each step.",
+        "daniel": "State that is set in one place must be undone in every exit path, and a parameter that is accepted but never used is a warning sign. Check every way a ride can end."
+      }
+    }
+  ]
+}

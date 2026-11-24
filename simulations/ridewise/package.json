@@ -1,0 +1,14 @@
+{
+  "name": "ridewise",
+  "version": "1.0.0",
+  "description": "Ridewise: the backend of a city ride-hailing service, used as an OnWard engineering simulation.",
+  "private": true,
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

@@ -1,0 +1,194 @@
+{
+  "simulationId": "pulsewave",
+  "simulationName": "Pulsewave",
+  "roleId": "frontend-developer",
+  "description": "The web player of a music streaming service: playlists, a play queue, search, liked songs and a now-playing bar.",
+  "issues": [
+    {
+      "id": "PW-101",
+      "difficulty": "easy",
+      "area": "Track durations",
+      "title": "Track lengths show as 3:5 instead of 3:05",
+      "symptoms": "Songs whose length has fewer than ten leftover seconds show a broken time such as 3:5 in playlists, the queue and the now-playing bar.",
+      "relevantFiles": [
+        "src/lib/format.js"
+      ],
+      "acceptanceCriteria": [
+        "A track of 3 minutes 5 seconds is shown as 3:05.",
+        "A track of exactly 3 minutes is shown as 3:00.",
+        "Durations whose seconds already have two digits, and playlist totals, are unchanged."
+      ],
+      "hiddenTest": "PW-101.test.js",
+      "hints": [
+        "Pick a track whose length ends in a single-digit number of seconds and compare what you see with what you expect. Which function turns seconds into text?",
+        "The seconds part is converted to text as it is, so 5 becomes \"5\" rather than \"05\".",
+        "Make sure the seconds part is always two characters wide when it is put after the colon.",
+        "In formatDuration, pad the seconds to two digits (for example with padStart(2, \"0\")) before building the string."
+      ],
+      "context": {
+        "affected": "Every listener sees it on every track that has single-digit seconds, roughly one song in six. Support gets a steady trickle of \"your times look wrong\" messages.",
+        "priority": "Medium: very visible and embarrassing, but nothing is broken functionally.",
+        "outOfScope": "Do not change how playlist totals are written (for example \"13 min\") and do not touch track data.",
+        "reproduce": [
+          "Open the app and the Morning Drive playlist.",
+          "Find \"Neon Skyline\", which is 185 seconds long.",
+          "Read the length shown next to the title: it says 3:5."
+        ]
+      },
+      "guide": {
+        "alex": "Every place that shows a track length goes through one helper in src/lib/format.js. trackRow, queuePanel and nowPlayingBar all call it, so start there rather than in the components. Read how it builds the final string from minutes and seconds.",
+        "sarah": "Try lengths of 0, 5, 59, 60, 61, 65, 180 and 185 seconds. A whole number of minutes is an edge case that is easy to forget. Also check that two-digit seconds such as 754 (12:34) still look right.",
+        "daniel": "When you glue numbers into a clock-like string, a number has no idea it should be two characters wide. Formatting time usually needs explicit padding so that every value keeps the same shape."
+      }
+    },
+    {
+      "id": "PW-102",
+      "difficulty": "easy",
+      "area": "Accessibility",
+      "title": "Screen readers announce the play/pause button as just \"button\"",
+      "symptoms": "Listeners using a screen reader hear only \"button\" for the main play/pause control in the now-playing bar, while the other controls are announced properly.",
+      "relevantFiles": [
+        "src/components/nowPlayingBar.js"
+      ],
+      "acceptanceCriteria": [
+        "While paused, the play/pause button has the accessible label \"Play\".",
+        "While playing, the play/pause button has the accessible label \"Pause\".",
+        "The rest of the bar (track info and the other labelled controls) still renders as before."
+      ],
+      "hiddenTest": "PW-102.test.js",
+      "hints": [
+        "Compare the markup of the play/pause button with the other buttons in the bar. What do the others have that this one does not?",
+        "The button only contains an icon character, so it has no text that a screen reader can read.",
+        "Give the button an accessible name that matches what pressing it would do right now.",
+        "Add an aria-label to the toggle-play button: \"Pause\" when isPlaying is true, otherwise \"Play\"."
+      ],
+      "context": {
+        "affected": "Blind and low-vision listeners cannot tell what the main control does. An accessibility audit flagged it as a blocker.",
+        "priority": "High: accessibility audit finding that must be closed before the next release.",
+        "outOfScope": "Do not redesign the bar or change icons, and do not rename the other labels.",
+        "reproduce": [
+          "Turn on a screen reader or inspect the accessibility tree.",
+          "Play any track so the now-playing bar appears.",
+          "Focus the large play/pause button: its name is empty, unlike Previous track and Next track."
+        ]
+      },
+      "guide": {
+        "alex": "The bar is built by nowPlayingBar in src/components/nowPlayingBar.js, which returns one template string. Look at how the shuffle, previous and next buttons are written and compare them with the toggle-play button. Its icon depends on isPlaying.",
+        "sarah": "Check both states, paused and playing. The label should follow the state, not be a fixed word. Also make sure the data-action attribute on the button is still there afterwards.",
+        "daniel": "Buttons that only contain an icon have no readable name for assistive technology. An aria-label supplies the name. Good labels describe the action the control performs, and they change when the control changes."
+      }
+    },
+    {
+      "id": "PW-103",
+      "difficulty": "medium",
+      "area": "Search",
+      "title": "Searching for \"daybreak\" finds nothing unless you type the capital D",
+      "symptoms": "Listeners searching their playlist get no results when they type in lowercase, even though the song or artist is right there. Typing the exact capitalisation works.",
+      "relevantFiles": [
+        "src/state/selectors.js"
+      ],
+      "acceptanceCriteria": [
+        "Searching by title matches regardless of upper or lower case.",
+        "Searching by artist matches regardless of upper or lower case.",
+        "Empty, whitespace-only, padded and non-matching searches behave as before."
+      ],
+      "hiddenTest": "PW-103.test.js",
+      "hints": [
+        "Search for a track using all lowercase letters, then using its exact capitalisation. Which function decides whether a track matches?",
+        "The comparison between the typed text and the title or artist is exact, so \"neon\" does not equal \"Neon\".",
+        "Both sides of the comparison need to be put in the same case before checking for a match.",
+        "In filterTracks, lowercase the trimmed query once and lowercase the title and the artist before calling includes."
+      ],
+      "context": {
+        "affected": "Almost all listeners type search text in lowercase, so search looks broken for most people. Support has had several complaints this week.",
+        "priority": "High: search is a core flow and the fix is wanted in this sprint.",
+        "outOfScope": "Do not add fuzzy matching, new searchable fields or debouncing.",
+        "reproduce": [
+          "Open the Morning Drive playlist.",
+          "Type \"neon skyline\" into the search box.",
+          "See \"No tracks match your search.\" even though \"Neon Skyline\" is in the list."
+        ]
+      },
+      "guide": {
+        "alex": "The search box dispatches library/search, which stores the text in state.query. selectVisibleTracks in src/state/selectors.js gets the open playlist tracks and hands them to filterTracks together with the query. The matching rule lives in filterTracks.",
+        "sarah": "Try the same search in lowercase, uppercase and mixed case, against both a title and an artist. Also try an empty box, only spaces, leading spaces around a real word, and text that matches nothing. Titles with symbols like \"&\" are worth one try.",
+        "daniel": "Text comparison is exact by default, and \"A\" is a different character from \"a\". Searches are meant for people, so both sides are normally brought to a common form (for example the same case) before comparing."
+      }
+    },
+    {
+      "id": "PW-104",
+      "difficulty": "medium",
+      "area": "Play queue",
+      "title": "\"Play next\" adds the song to the end of the queue",
+      "symptoms": "Choosing \"Play next\" on a track puts it after everything already in the queue, so it plays last instead of right after the current song.",
+      "relevantFiles": [
+        "src/state/reducer.js"
+      ],
+      "acceptanceCriteria": [
+        "\"Play next\" places the track at the front of the queue.",
+        "After the current track ends, the \"play next\" track is the one that plays.",
+        "Adding to an empty queue and \"Add to queue\" (which appends) behave as before."
+      ],
+      "hiddenTest": "PW-104.test.js",
+      "hints": [
+        "Queue three tracks, then use \"Play next\" on a fourth. Where does it appear in the \"Up next\" list?",
+        "Both queue actions currently do the same thing. They should differ in where the track goes.",
+        "\"Play next\" should put the track before everything that is already waiting in the queue.",
+        "In the queue/playNext case of the reducer, build the new queue with the track first and the existing queue after it."
+      ],
+      "context": {
+        "affected": "Anyone who builds a queue and wants to jump a song ahead, which is common at parties. They say the feature \"does nothing\".",
+        "priority": "Medium: a visible feature gap, but there is a manual workaround.",
+        "outOfScope": "Do not change \"Add to queue\", queue removal or shuffle.",
+        "reproduce": [
+          "Play any track and add two other tracks with the queue action.",
+          "Click \"Play next\" on another track.",
+          "Look at \"Up next\": the track is last, not first."
+        ]
+      },
+      "guide": {
+        "alex": "The row buttons are wired up in src/main.js and dispatch actions into the reducer in src/state/reducer.js. The queue itself is just an array of track ids in state.queue. Read the queue/add and queue/playNext cases side by side, then see how player/next takes from the queue.",
+        "sarah": "Try \"play next\" on an empty queue, on a queue of one and of several tracks, and twice in a row (the later one should come first). Then press next and check which track plays. Make sure \"Add to queue\" still appends.",
+        "daniel": "A list gives you two natural places to put a new item, the front and the back, and the difference is the whole feature. When two operations look almost identical, ask what they are meant to do differently."
+      }
+    },
+    {
+      "id": "PW-105",
+      "difficulty": "hard",
+      "area": "Liked songs",
+      "title": "Likes survive signing out, and liking a track changes data it should not touch",
+      "symptoms": "After liking some songs and resetting the session for another listener, the same hearts are still filled in. Developers also see earlier snapshots of the state change after a like.",
+      "relevantFiles": [
+        "src/state/reducer.js",
+        "src/state/selectors.js"
+      ],
+      "acceptanceCriteria": [
+        "Liking a track leaves the previous state and the original catalogue data untouched; only the new state shows the like.",
+        "Resetting the session returns a state with no liked tracks.",
+        "Liking and unliking still updates only the chosen track, the liked list stays correct and unknown track ids change nothing."
+      ],
+      "hiddenTest": "PW-105.test.js",
+      "hints": [
+        "Like a track, then reset the session. Also compare the state before and after a like: is anything in the old state different? Which reducer case handles likes?",
+        "The like case edits the track object in place and only copies the outer array. Old states and the original seed share that same object.",
+        "Reducers must return new objects instead of editing existing ones. The liked track needs to be replaced by a changed copy.",
+        "In the track/toggleLike case, build tracks with map: return { ...track, liked: !track.liked } for the matching id and the same object for every other track. Keep returning the same state for an unknown id."
+      ],
+      "context": {
+        "affected": "Every listener who likes songs and shares a device sees the previous person likes. Engineering also cannot rely on state snapshots, which blocks the undo feature.",
+        "priority": "High: privacy-flavoured bug that also blocks the undo feature planned for next sprint.",
+        "outOfScope": "Do not change how likes are displayed, and do not add persistence or new actions.",
+        "reproduce": [
+          "Open a playlist and like two tracks.",
+          "Trigger the session reset.",
+          "The hearts are still filled in and \"Liked songs\" is not empty."
+        ]
+      },
+      "guide": {
+        "alex": "Likes are stored as a liked flag on each track object inside state.tracks, and playlists and the queue only hold ids. Start at the track/toggleLike case in src/state/reducer.js, then look at createInitialState and session/reset to see where the track objects come from and who else holds them. selectLikedTracks in selectors.js reads the flag.",
+        "sarah": "Capture getState() before a like and check it again afterwards. Compare the original seed objects after liking. Try like then reset, like then unlike, two different tracks, a track id that does not exist, and checking that subscribers are still notified when a like happens.",
+        "daniel": "This is mutation of shared state. If two places hold the same object and one edits it in place, the other changes too, even when you thought you made a new state. Immutable updates copy only what changed and leave everything else alone."
+      }
+    }
+  ]
+}

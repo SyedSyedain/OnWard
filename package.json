@@ -7,7 +7,7 @@
   "scripts": {
     "setup": "npm install --prefix server && npm install --prefix client && npm install --prefix simulations/shopsphere",
     "dev": "node scripts/dev.js",
-    "test": "npm test --prefix server && npm test --prefix simulations/shopsphere",
+    "test": "npm test --prefix server && node scripts/test-simulations.js",
     "build": "npm run build --prefix client"
   },
   "engines": {

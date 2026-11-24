@@ -37,5 +37,15 @@ export function createProductService(store) {
       .map((product) => ({ ...product }));
   }
 
-  return { createProduct, getProduct, searchProducts };
+  /**
+   * Lists the catalogue. With `inStockOnly`, products that cannot be bought
+   * right now are left out.
+   */
+  function listProducts({ inStockOnly = false } = {}) {
+    return [...store.products.values()]
+      .filter((product) => !inStockOnly || product.stock >= 0)
+      .map((product) => ({ ...product }));
+  }
+
+  return { createProduct, getProduct, searchProducts, listProducts };
 }

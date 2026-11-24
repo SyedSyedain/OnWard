@@ -2,7 +2,7 @@
  * Checkout rules: turning a cart into an order and reserving stock.
  */
 
-import { ConflictError, ValidationError } from '../lib/errors.js';
+import { ConflictError, NotFoundError, ValidationError } from '../lib/errors.js';
 
 export function createOrderService(store, cartService) {
   function checkout(cartId) {
@@ -33,5 +33,23 @@ export function createOrderService(store, cartService) {
     return order;
   }
 
-  return { checkout };
+  /**
+   * Cancels a confirmed order and puts its items back into stock.
+   */
+  function cancelOrder(orderId) {
+    const order = store.orders.get(orderId);
+    if (!order) {
+      throw new NotFoundError(`Order ${orderId} does not exist.`);
+    }
+
+    for (const item of order.items) {
+      const product = store.products.get(item.productId);
+      product.stock += item.quantity;
+    }
+    order.status = 'CANCELLED';
+
+    return order;
+  }
+
+  return { checkout, cancelOrder };
 }

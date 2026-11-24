@@ -1,6 +1,8 @@
 {
   "simulationId": "shopsphere",
   "simulationName": "ShopSphere",
+  "roleId": "backend-developer",
+  "description": "ShopSphere is the backend of a small online store that manages products, shopping carts and orders.",
   "issues": [
     {
       "id": "SS-101",
@@ -8,7 +10,10 @@
       "area": "Product catalogue",
       "title": "Products can be created with a zero or negative price",
       "symptoms": "The catalogue team reports products appearing in the store for Rs 0.00 and, in one case, a negative price.",
-      "relevantFiles": ["src/services/productService.js", "src/lib/errors.js"],
+      "relevantFiles": [
+        "src/services/productService.js",
+        "src/lib/errors.js"
+      ],
       "acceptanceCriteria": [
         "Creating a product with a price of zero is rejected with a ValidationError.",
         "Creating a product with a negative price is rejected with a ValidationError.",
@@ -20,7 +25,22 @@
         "The price check confirms the value is a whole number, but a whole number can still be zero or below zero.",
         "Extend the price validation in productService.js so that only values greater than zero are accepted.",
         "Add a condition next to Number.isInteger(priceInPaise) that rejects priceInPaise <= 0 by throwing the same ValidationError type."
-      ]
+      ],
+      "context": {
+        "affected": "The catalogue team has seen free and negative-priced items go live on the storefront, and customers could in theory check out for nothing. It is embarrassing, but only a handful of products so far.",
+        "priority": "High: pricing mistakes cost real money and we want this closed before the next catalogue import.",
+        "outOfScope": "Do not change how stock or product names are validated, and do not clean up products that already exist.",
+        "reproduce": [
+          "Call createProduct with a name and priceInPaise set to 0.",
+          "Observe that the product is created and appears in search results.",
+          "Repeat with priceInPaise set to -500 and observe the same."
+        ]
+      },
+      "guide": {
+        "alex": "Start in src/services/productService.js and read createProduct from top to bottom: it runs a series of guard checks and then stores the product in store.products. Notice what each guard throws (ValidationError from src/lib/errors.js) and compare the name, price and stock checks against each other.",
+        "sarah": "Try a price of 0, -1, -500 and 1, and a non-integer like 99.5. Also confirm that a valid product with stock 0 is still accepted, since stock and price are separate rules.",
+        "daniel": "This is a boundary-validation bug: a check proves one property of a value (it is a whole number) but nobody asked whether it is also a sensible value. When you write validation, list every property a valid input must have, then check each one at the edges."
+      }
     },
     {
       "id": "SS-102",
@@ -28,7 +48,9 @@
       "area": "Shopping cart",
       "title": "Adding the same product twice resets the cart quantity",
       "symptoms": "Customers who add 2 earbuds and then 3 more see only 3 in their cart instead of 5. Support tickets mention carts 'losing' items.",
-      "relevantFiles": ["src/services/cartService.js"],
+      "relevantFiles": [
+        "src/services/cartService.js"
+      ],
       "acceptanceCriteria": [
         "Adding a product that is already in the cart increases its quantity by the amount added.",
         "Adding a new product still creates a new cart line.",
@@ -40,7 +62,22 @@
         "addItem treats an existing line and a new line differently. Read the branch that handles an existing line carefully.",
         "When the product is already in the cart, the new quantity should be combined with the existing one rather than replacing it.",
         "In the existingItem branch of addItem, the assignment overwrites the quantity. Change it so the added quantity is added to existingItem.quantity."
-      ]
+      ],
+      "context": {
+        "affected": "Shoppers who add the same item in two steps end up buying fewer units than intended, and support is fielding 'my cart lost items' tickets daily.",
+        "priority": "High: it directly reduces order sizes and is generating support load.",
+        "outOfScope": "Do not change quantity validation, cart totals formatting or checkout and stock handling.",
+        "reproduce": [
+          "Add 2 units of a product to a cart.",
+          "Add 3 more units of the same product to the same cart.",
+          "View the cart and see 3 units instead of 5."
+        ]
+      },
+      "guide": {
+        "alex": "Open src/services/cartService.js and follow addItem: it validates, gets or creates the cart, then looks for a line with the same productId. Pay attention to what happens in the branch where that line already exists, then see how getCart derives line totals from the stored quantity.",
+        "sarah": "Add the same product twice, three times, and with different quantities, then check items.length, the quantity and totalInPaise. Also add a different product in between to make sure other lines are untouched.",
+        "daniel": "This is a classic overwrite-versus-accumulate mistake: an assignment replaces the old value where the business rule wants it combined with the new one. When code updates existing state, ask what the previous value should contribute."
+      }
     },
     {
       "id": "SS-103",
@@ -48,7 +85,10 @@
       "area": "Checkout and inventory",
       "title": "Failed checkouts leave inventory counts wrong",
       "symptoms": "The warehouse sees stock counts drift lower than reality. It happens after customers try to buy several items and checkout fails because one item is out of stock.",
-      "relevantFiles": ["src/services/orderService.js", "src/services/cartService.js"],
+      "relevantFiles": [
+        "src/services/orderService.js",
+        "src/services/cartService.js"
+      ],
       "acceptanceCriteria": [
         "If any item in the cart does not have enough stock, checkout fails with a ConflictError.",
         "A failed checkout does not change the stock of any product.",
@@ -60,7 +100,96 @@
         "checkout changes stock while it is still deciding whether the order is valid. What happens to the changes already made when it throws halfway?",
         "Separate checking from changing: confirm every item has enough stock first, and only then reduce stock for all of them.",
         "Use two loops in checkout: the first only validates stock and throws a ConflictError if needed, the second performs the product.stock -= item.quantity updates."
-      ]
+      ],
+      "context": {
+        "affected": "The warehouse sees inventory numbers drifting below the real shelf count after failed checkouts, which leads to products showing as unavailable while they are physically in stock.",
+        "priority": "High: wrong inventory hides sellable products and distorts purchasing decisions.",
+        "outOfScope": "Do not change how carts are built, how orders are numbered or the error messages customers see.",
+        "reproduce": [
+          "Put 4 units of product A (plenty of stock) and then more units of product B than are in stock into one cart.",
+          "Check out and note the stock-related error.",
+          "Look at product A's stock: it has gone down even though no order was created."
+        ]
+      },
+      "guide": {
+        "alex": "Read checkout in src/services/orderService.js: it loads the cart through cartService.getCart, then walks the items once. Look at what that single loop both decides and changes, and think about what state is left behind when it throws partway through.",
+        "sarah": "Use carts with two or more lines where the failing line is first, last and in the middle, and compare stock and cart contents before and after. Also test a fully successful multi-item checkout and exact-stock quantities.",
+        "daniel": "This is about atomicity: an operation that changes state in steps can leave things half-done if it fails midway. A common approach is to validate everything first and only then apply the changes, so a failure leaves the world as it was."
+      }
+    },
+    {
+      "id": "SS-104",
+      "difficulty": "easy",
+      "area": "Product catalogue",
+      "title": "Sold-out products still show up when browsing only in-stock items",
+      "symptoms": "Shoppers who switch on the 'in stock only' filter still see products that show zero units available, and complain when they cannot add them to the cart.",
+      "relevantFiles": [
+        "src/services/productService.js"
+      ],
+      "acceptanceCriteria": [
+        "The in-stock listing does not include products whose stock is zero.",
+        "The in-stock listing still includes products that have stock.",
+        "The full listing without the filter still includes every product, sold out or not."
+      ],
+      "hiddenTest": "SS-104.test.js",
+      "hints": [
+        "Compare what the in-stock listing returns for a product with zero stock against one with ten. What do they have in common?",
+        "The filter is meant to keep only products that can be bought, but one boundary value is being treated as acceptable.",
+        "Look at the comparison used for the stock check inside listProducts and decide which stock levels should count as available.",
+        "A product with stock 0 should be excluded, so the stock check must require stock to be strictly greater than zero."
+      ],
+      "context": {
+        "affected": "Every shopper using the in-stock filter, which is most of our mobile traffic. They hit dead ends on products they cannot buy.",
+        "priority": "Medium: annoying and visible, but no money or data is at risk.",
+        "outOfScope": "Do not change search behaviour, the unfiltered listing or how stock is reduced at checkout.",
+        "reproduce": [
+          "Create a product with stock 0 and another with stock 5.",
+          "Request the product list with the in-stock filter on (GET /products?inStock=true).",
+          "See that the zero-stock product is in the results."
+        ]
+      },
+      "guide": {
+        "alex": "The filter lives in listProducts in src/services/productService.js, and src/routes/productRoutes.js calls it when the inStock query parameter is true. Read how listProducts decides which products to keep and what values stock can take.",
+        "sarah": "Try products with stock 0, 1 and a large number, and run the listing with and without the filter. Also check a product that sold out through checkout rather than being created at zero.",
+        "daniel": "This is a boundary bug: the edge value is on the wrong side of the line. When a rule says 'at least' or 'more than', write down the smallest value that should pass and the largest that should fail, then check the comparison against both."
+      }
+    },
+    {
+      "id": "SS-105",
+      "difficulty": "medium",
+      "area": "Orders and inventory",
+      "title": "Cancelling an order twice puts its items back in stock twice",
+      "symptoms": "After support double-clicks the cancel button or retries a request, the warehouse sees stock levels higher than what is actually on the shelves.",
+      "relevantFiles": [
+        "src/services/orderService.js"
+      ],
+      "acceptanceCriteria": [
+        "Cancelling an order that is already cancelled fails with a ConflictError.",
+        "Repeated cancellation does not restock the items more than once.",
+        "Cancelling a confirmed order still marks it CANCELLED and restocks its items."
+      ],
+      "hiddenTest": "SS-105.test.js",
+      "hints": [
+        "Cancel the same order twice and watch the product's stock after each call. What differs from what you expect?",
+        "cancelOrder does the same work no matter what state the order is in.",
+        "An order should only be cancellable once. Check the order's current status before changing anything.",
+        "At the top of cancelOrder, after finding the order, throw a ConflictError if its status is already CANCELLED, before any stock is restored."
+      ],
+      "context": {
+        "affected": "The warehouse and inventory planners, who now see phantom stock after repeated cancellations. Customers may then buy items that do not exist.",
+        "priority": "High: phantom stock leads to overselling and refunds.",
+        "outOfScope": "Do not change checkout, the order statuses themselves or how unknown orders are reported.",
+        "reproduce": [
+          "Check out a cart with 3 units of a product.",
+          "Cancel the resulting order and note that stock goes back up.",
+          "Cancel the same order again and see stock rise a second time."
+        ]
+      },
+      "guide": {
+        "alex": "Read cancelOrder in src/services/orderService.js and compare it with checkout just above it: checkout creates an order with a status, and cancelOrder looks it up in store.orders and loops over its items. Note when, if ever, the order's status is looked at.",
+        "sarah": "Cancel once, twice and three times and track stock after each call. Also try an unknown order id, and a cancel followed by a fresh checkout of the same product to see that normal flows still work.",
+        "daniel": "This is an idempotency and state-transition problem: an action is only valid from certain states, but nothing enforces that, so repeating it repeats its side effects. Ask what states an order can be in when the action is allowed, and make the code say so."
+      }
     }
   ]
 }
