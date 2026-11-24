@@ -19,8 +19,10 @@ export default function Composer({ placeholder, suggestions = [], disabled, onSe
   async function send(text) {
     const message = text.trim();
     if (!message || disabled) return;
+    // Clear the box as soon as the message is sent; put it back only if sending failed.
+    setDraft('');
     const sent = await onSend(message);
-    if (sent !== false) setDraft('');
+    if (sent === false) setDraft((current) => current || text);
   }
 
   return (

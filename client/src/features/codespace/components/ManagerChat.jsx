@@ -20,11 +20,18 @@ export default function ManagerChat({
   async function send(message) {
     setTyping(true);
     setError(null);
+    // Show the question straight away; the server's copy replaces it when the reply arrives.
+    const pending = { author: 'student', text: message, sentAt: 'pending' };
+    onSessionChange((current) => ({ ...current, managerMessages: [...current.managerMessages, pending] }));
     try {
       const { messages } = await sessionsApi.askManager(session.id, message);
       onSessionChange((current) => ({ ...current, managerMessages: messages }));
       return true;
     } catch (sendError) {
+      onSessionChange((current) => ({
+        ...current,
+        managerMessages: current.managerMessages.filter((entry) => entry !== pending),
+      }));
       setError(sendError.message);
       return false;
     } finally {

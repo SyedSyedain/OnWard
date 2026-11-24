@@ -45,7 +45,7 @@ export default function ChatThread({ messages, who, typing, empty }) {
               {startsGroup && (
                 <span className="mb-1 flex items-center gap-1.5 px-1 text-[11px] text-muted">
                   <span className="font-medium text-ink-2">{mine ? 'You' : who.name}</span>
-                  <time dateTime={message.sentAt}>{formatTime(message.sentAt)}</time>
+                  <time dateTime={message.sentAt === 'pending' ? undefined : message.sentAt}>{formatTime(message.sentAt)}</time>
                   {!mine && message.generatedBy === 'template' && (
                     <span
                       className="rounded bg-paper-3 px-1 text-[10px] text-muted"
@@ -92,5 +92,8 @@ export default function ChatThread({ messages, who, typing, empty }) {
 }
 
 function formatTime(iso) {
-  return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  const date = new Date(iso);
+  // A message still on its way has no server time yet.
+  if (Number.isNaN(date.getTime())) return 'Sending…';
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
