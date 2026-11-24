@@ -16,6 +16,8 @@ const envSchema = z.object({
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL: z.string().default('gemini-3.8-flash'),
+  // Tried in order when the main model is overloaded, rate limited or slow.
+  GEMINI_FALLBACK_MODELS: z.string().default('gemini-3.7-flash,gemini-3.5-flash-lite'),
   RECORD_SECRET: z.string().min(16, 'RECORD_SECRET must be at least 16 characters.').default('local-development-secret-only'),
   TEST_RUN_TIMEOUT_SECONDS: z.coerce.number().int().min(5).max(120).default(20),
   DATA_DIRECTORY: z.string().default(path.join(serverRoot, '.data')),
@@ -37,6 +39,9 @@ export const config = Object.freeze({
   gemini: Object.freeze({
     apiKey: env.GEMINI_API_KEY,
     model: env.GEMINI_MODEL,
+    fallbackModels: env.GEMINI_FALLBACK_MODELS.split(',')
+      .map((name) => name.trim())
+      .filter(Boolean),
     enabled: env.GEMINI_API_KEY.trim().length > 0,
   }),
   recordSecret: env.RECORD_SECRET,

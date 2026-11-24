@@ -80,7 +80,8 @@ npm run dev            # API on :5050, web app on http://localhost:5173
 
 Gemini is optional. To enable it, create a key at [Google AI Studio](https://aistudio.google.com/apikey)
 and set `GEMINI_API_KEY` in `server/.env`. Check AI Studio for the current model name and set
-`GEMINI_MODEL` if it differs from the default. Without a key, the app runs in fallback mode.
+`GEMINI_MODEL` if it differs from the default. When that model is busy or rate limited, the server
+moves on to the models in `GEMINI_FALLBACK_MODELS`. Without a key, the app runs in fallback mode.
 
 ### Running tests
 
