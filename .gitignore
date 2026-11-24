@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+coverage/
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Runtime data: sessions, records and student workspaces
+server/.data/
+
+# Editor and OS files
+.DS_Store
+.vscode/
+.idea/
+*.log
+.claude/
+.hallmark/

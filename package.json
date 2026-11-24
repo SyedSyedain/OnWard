@@ -1,0 +1,17 @@
+{
+  "name": "onward",
+  "version": "0.1.0",
+  "description": "An AI engineering-job simulation: real tickets, a real codebase, an AI team, and verified work records.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup": "npm install --prefix server && npm install --prefix client && npm install --prefix simulations/shopsphere",
+    "dev": "node scripts/dev.js",
+    "test": "npm test --prefix server && npm test --prefix simulations/shopsphere",
+    "build": "npm run build --prefix client"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT"
+}
