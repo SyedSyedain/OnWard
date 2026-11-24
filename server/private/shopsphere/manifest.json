@@ -1,0 +1,66 @@
+{
+  "simulationId": "shopsphere",
+  "simulationName": "ShopSphere",
+  "issues": [
+    {
+      "id": "SS-101",
+      "difficulty": "easy",
+      "area": "Product catalogue",
+      "title": "Products can be created with a zero or negative price",
+      "symptoms": "The catalogue team reports products appearing in the store for Rs 0.00 and, in one case, a negative price.",
+      "relevantFiles": ["src/services/productService.js", "src/lib/errors.js"],
+      "acceptanceCriteria": [
+        "Creating a product with a price of zero is rejected with a ValidationError.",
+        "Creating a product with a negative price is rejected with a ValidationError.",
+        "Products with a positive whole-number price are still created as before."
+      ],
+      "hiddenTest": "SS-101.test.js",
+      "hints": [
+        "Look at every rule createProduct checks before it saves a product. Which property of a price is never checked?",
+        "The price check confirms the value is a whole number, but a whole number can still be zero or below zero.",
+        "Extend the price validation in productService.js so that only values greater than zero are accepted.",
+        "Add a condition next to Number.isInteger(priceInPaise) that rejects priceInPaise <= 0 by throwing the same ValidationError type."
+      ]
+    },
+    {
+      "id": "SS-102",
+      "difficulty": "medium",
+      "area": "Shopping cart",
+      "title": "Adding the same product twice resets the cart quantity",
+      "symptoms": "Customers who add 2 earbuds and then 3 more see only 3 in their cart instead of 5. Support tickets mention carts 'losing' items.",
+      "relevantFiles": ["src/services/cartService.js"],
+      "acceptanceCriteria": [
+        "Adding a product that is already in the cart increases its quantity by the amount added.",
+        "Adding a new product still creates a new cart line.",
+        "The cart total reflects the combined quantity."
+      ],
+      "hiddenTest": "SS-102.test.js",
+      "hints": [
+        "Reproduce it: add the same product to one cart twice and inspect the cart. What happens to the first quantity?",
+        "addItem treats an existing line and a new line differently. Read the branch that handles an existing line carefully.",
+        "When the product is already in the cart, the new quantity should be combined with the existing one rather than replacing it.",
+        "In the existingItem branch of addItem, the assignment overwrites the quantity. Change it so the added quantity is added to existingItem.quantity."
+      ]
+    },
+    {
+      "id": "SS-103",
+      "difficulty": "hard",
+      "area": "Checkout and inventory",
+      "title": "Failed checkouts leave inventory counts wrong",
+      "symptoms": "The warehouse sees stock counts drift lower than reality. It happens after customers try to buy several items and checkout fails because one item is out of stock.",
+      "relevantFiles": ["src/services/orderService.js", "src/services/cartService.js"],
+      "acceptanceCriteria": [
+        "If any item in the cart does not have enough stock, checkout fails with a ConflictError.",
+        "A failed checkout does not change the stock of any product.",
+        "A successful checkout still reduces stock for every item and clears the cart."
+      ],
+      "hiddenTest": "SS-103.test.js",
+      "hints": [
+        "Put two products in a cart where only the second one is out of stock, then try to check out. Compare stock before and after.",
+        "checkout changes stock while it is still deciding whether the order is valid. What happens to the changes already made when it throws halfway?",
+        "Separate checking from changing: confirm every item has enough stock first, and only then reduce stock for all of them.",
+        "Use two loops in checkout: the first only validates stock and throws a ConflictError if needed, the second performs the product.stock -= item.quantity updates."
+      ]
+    }
+  ]
+}
