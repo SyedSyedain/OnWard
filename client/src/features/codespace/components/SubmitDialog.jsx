@@ -79,7 +79,7 @@ export default function SubmitDialog({ sessionId, prepare, onTestResult, onRevie
       >
         <header className="flex items-center justify-between border-b border-line px-5 py-4">
           <h2 id="submit-title" className="font-display text-base font-semibold text-ink">
-            {running ? 'Reviewing your work' : 'Submit for review'}
+            {running ? 'Reviewing your work' : 'Get a practice review'}
           </h2>
           {!running && (
             <button
@@ -182,7 +182,7 @@ export default function SubmitDialog({ sessionId, prepare, onTestResult, onRevie
               onClick={submit}
               className="h-9 rounded-lg bg-accent px-4 text-sm font-medium text-ink hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
             >
-              {phase === 'error' ? 'Try again' : 'Submit for review'}
+              {phase === 'error' ? 'Try again' : 'Get a practice review'}
             </button>
           </footer>
         )}

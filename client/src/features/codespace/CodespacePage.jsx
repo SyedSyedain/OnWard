@@ -248,7 +248,7 @@ function Codespace({ session, onSessionChange }) {
   };
 
   return (
-    <div className="codespace flex h-dvh flex-col overflow-hidden bg-paper text-ink">
+    <div className="codespace flex h-dvh flex-col overflow-clip bg-paper text-ink">
       <TopBar
         session={session}
         taskStatus={taskStatus}
@@ -356,8 +356,13 @@ function Codespace({ session, onSessionChange }) {
         {shownReview && (
           <ReviewView
             review={shownReview}
-            attempt={(session.reviews ?? []).findIndex((entry) => entry.id === shownReview.id) + 1 || 1}
+            reviews={session.reviews ?? [shownReview]}
+            onSelect={setShownReview}
             onBack={() => setShownReview(null)}
+            onOpenFile={(path) => {
+              setShownReview(null);
+              files.openFile(path);
+            }}
             onFinish={finish}
           />
         )}

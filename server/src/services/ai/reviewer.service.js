@@ -85,7 +85,7 @@ function fallbackReview({ ticket, diff, testResult, testSummary }) {
   const qualityScore = Math.round(((maintainability + edgeCases + reliability) / 15) * 25);
 
   return {
-    summary: `${testSummary} The change touches ${diff.changedFiles.join(', ')} (${added.length} added, ${removed.length} removed lines). This review comes from automatic checks, not from an AI reviewer.`,
+    summary: `${testSummary} The change touches ${diff.changedFiles.join(', ')} (${added.length} added, ${removed.length} removed lines).`,
     strengths: strengths.slice(0, 4),
     improvements: improvements.slice(0, 4),
     qualityScore,

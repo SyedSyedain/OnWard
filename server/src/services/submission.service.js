@@ -13,7 +13,7 @@ import { calculateScore } from './scoring.service.js';
 import { runWorkspaceTests } from './testRunner.service.js';
 import { SESSION_STATUS, assertStatus, getSession, saveSession, toPublicReview } from './session.service.js';
 
-const ROLE_TITLES = { 'backend-developer': 'Backend Developer' };
+const ROLE_TITLES = { 'frontend-developer': 'Frontend Developer', 'backend-developer': 'Backend Developer' };
 
 export async function runTests(sessionId) {
   const session = getSession(sessionId);

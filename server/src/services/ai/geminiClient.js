@@ -7,7 +7,9 @@
  *
  * When a model is overloaded, rate limited or slow, the call moves on to the
  * next model in `GEMINI_FALLBACK_MODELS`, and that model is skipped for a short
- * while so later calls do not wait on it again.
+ * while so later calls do not wait on it again. One call never waits longer than
+ * `CALL_BUDGET_MS` in total, and when every model is cooling down it answers from
+ * the fallback at once, so a busy Gemini costs the student seconds, not a minute.
  */
 
 import { GoogleGenAI } from '@google/genai';
@@ -15,8 +17,10 @@ import { z } from 'zod';
 import { config } from '../../config/env.js';
 import { logger } from '../../lib/logger.js';
 
-const REQUEST_TIMEOUT_MS = 12_000;
-const COOL_DOWN_MS = 60_000;
+const CALL_BUDGET_MS = 10_000;
+const MIN_ATTEMPT_MS = 2_000;
+// Rate limits last longer than overload spikes.
+const COOL_DOWN_MS = { rateLimited: 60_000, busy: 20_000 };
 // 429: rate limited or quota used up. 500, 503, 504: the model is having trouble.
 const RETRYABLE_STATUS = new Set([429, 500, 503, 504]);
 
@@ -37,7 +41,10 @@ export async function generateStructured({ systemInstruction, prompt, schema, pu
     return null;
   }
 
+  const deadline = Date.now() + CALL_BUDGET_MS;
   for (const model of modelsToTry()) {
+    const remaining = deadline - Date.now();
+    if (remaining < MIN_ATTEMPT_MS) break;
     try {
       const response = await withTimeout(
         client.models.generateContent({
@@ -50,6 +57,7 @@ export async function generateStructured({ systemInstruction, prompt, schema, pu
             temperature: 0.4,
           },
         }),
+        remaining,
       );
 
       const result = schema.safeParse(JSON.parse(response.text ?? ''));
@@ -63,8 +71,9 @@ export async function generateStructured({ systemInstruction, prompt, schema, pu
         logger.warn('Gemini request failed, using fallback', { purpose, model, reason: error.message });
         return null;
       }
-      coolingUntil.set(model, Date.now() + COOL_DOWN_MS);
-      logger.warn('Gemini model unavailable, trying the next one', { purpose, model, status: statusOf(error) });
+      const status = statusOf(error);
+      coolingUntil.set(model, Date.now() + (status === 429 ? COOL_DOWN_MS.rateLimited : COOL_DOWN_MS.busy));
+      logger.warn('Gemini model unavailable, trying the next one', { purpose, model, status });
     }
   }
 
@@ -72,11 +81,10 @@ export async function generateStructured({ systemInstruction, prompt, schema, pu
   return null;
 }
 
-/** Models that are not cooling down, in order; all of them if every one is. */
+/** Models that are not cooling down, in order. Empty while all of them are. */
 function modelsToTry() {
   const now = Date.now();
-  const ready = models.filter((model) => (coolingUntil.get(model) ?? 0) <= now);
-  return ready.length > 0 ? ready : models;
+  return models.filter((model) => (coolingUntil.get(model) ?? 0) <= now);
 }
 
 function isRetryable(error) {
@@ -90,10 +98,10 @@ function statusOf(error) {
   return match ? Number(match[1]) : null;
 }
 
-function withTimeout(promise) {
+function withTimeout(promise, ms) {
   let timer;
   const timeout = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error('Gemini request timed out')), REQUEST_TIMEOUT_MS);
+    timer = setTimeout(() => reject(new Error('Gemini request timed out')), ms);
   });
   return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
 }

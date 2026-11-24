@@ -1,8 +1,7 @@
 import { Check, CircleAlert, FlaskConical, Loader2, PanelLeft, Send, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Mark from '../../../components/brand/Mark.jsx';
-
-const ROLE_TITLES = { 'backend-developer': 'Backend Developer' };
+import { ROLES } from '../../../lib/constants.js';
 
 const STATUS_TONES = {
   ok: 'bg-ok-soft text-ok',
@@ -26,7 +25,7 @@ export default function TopBar({
   onSubmit,
 }) {
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 bg-ink px-2 font-ui text-paper-2 sm:gap-3 sm:px-3">
+    <header className="flex h-12 min-w-0 shrink-0 items-center gap-2 overflow-hidden bg-ink px-2 font-ui text-paper-2 sm:gap-3 sm:px-3">
       {narrow && (
         <IconButton label="Files and task" onClick={onToggleFiles}>
           <PanelLeft className="size-4" aria-hidden />
@@ -45,7 +44,7 @@ export default function TopBar({
       <span className="hidden h-5 w-px bg-ink-3 md:block" aria-hidden />
       <p className="hidden min-w-0 flex-col leading-tight md:flex">
         <span className="truncate text-[13px] font-medium">{session.simulationName}</span>
-        <span className="truncate text-[11px] text-faint">{ROLE_TITLES[session.roleId] ?? session.roleId}</span>
+        <span className="truncate text-[11px] text-faint">{ROLES.find((role) => role.id === session.roleId)?.title ?? session.roleId}</span>
       </p>
 
       <button
@@ -64,7 +63,7 @@ export default function TopBar({
 
       <span className="flex-1" />
 
-      <p className="hidden items-center gap-1.5 text-xs text-faint lg:flex" role="status">
+      <p className="hidden shrink-0 items-center gap-1.5 text-xs text-faint xl:flex" role="status">
         {saveStatus.tone === 'busy' && <Loader2 className="size-3.5 animate-spin" aria-hidden />}
         {saveStatus.tone === 'ok' && <Check className="size-3.5" aria-hidden />}
         {saveStatus.tone === 'bad' && <CircleAlert className="size-3.5 text-[oklch(72%_0.16_30)]" aria-hidden />}
@@ -75,7 +74,7 @@ export default function TopBar({
         type="button"
         onClick={onRunTests}
         disabled={testing}
-        className="hidden h-8 items-center gap-1.5 rounded-md border border-ink-3 px-2.5 text-[13px] hover:border-faint disabled:text-faint md:flex focus-visible:outline-2 focus-visible:outline-accent"
+        className="hidden h-8 shrink-0 items-center gap-1.5 rounded-md border border-ink-3 px-2.5 text-[13px] hover:border-faint disabled:text-faint md:flex focus-visible:outline-2 focus-visible:outline-accent"
       >
         {testing ? (
           <Loader2 className="size-3.5 animate-spin" aria-hidden />
@@ -95,8 +94,7 @@ export default function TopBar({
         className="flex h-8 shrink-0 items-center gap-1.5 rounded-md bg-accent px-3 text-[13px] font-medium text-ink hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper-2"
       >
         <Send className="size-3.5" aria-hidden />
-        <span className="hidden sm:inline">Submit for review</span>
-        <span className="sm:hidden">Submit</span>
+        Get review
       </button>
     </header>
   );

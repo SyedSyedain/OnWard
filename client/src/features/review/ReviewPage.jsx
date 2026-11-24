@@ -8,8 +8,6 @@ import {
   ListChecks,
   MessageSquare,
   RotateCcw,
-  ThumbsUp,
-  TrendingUp,
   XCircle,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -135,19 +133,12 @@ export default function ReviewPage() {
             </Panel>
           </div>
 
-          <section className="rounded-2xl border border-line bg-paper-2 p-4">
-            <p className="line-clamp-2 text-[14.5px] leading-snug text-ink-2">
-              <span className="mr-2 rounded bg-paper-3 px-1.5 py-0.5 text-[11px] text-muted">
-                {review.generatedBy === 'gemini' ? 'AI review' : 'Auto review'}
-              </span>
-              {review.summary}
-            </p>
-            {(review.strengths[0] || review.improvements[0]) && (
-              <div className="mt-3 grid gap-2 text-[13px] sm:grid-cols-2">
-                {review.strengths[0] && <Note icon={ThumbsUp} tone="ok" text={review.strengths[0]} />}
-                {review.improvements[0] && <Note icon={TrendingUp} tone="warn" text={review.improvements[0]} />}
-              </div>
-            )}
+          <section className="grid items-center gap-4 rounded-2xl border border-line bg-paper-2 p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
+            <div className="min-w-0">
+              <h2 className="font-display text-base font-semibold">Final review</h2>
+              <p className="mt-1 line-clamp-2 text-[13.5px] leading-snug text-muted">{review.summary}</p>
+            </div>
+            <RunChart runs={session.testRuns} />
           </section>
         </div>
       </main>
@@ -183,12 +174,30 @@ function Check({ test }) {
   );
 }
 
-function Note({ icon: Icon, tone, text }) {
+/** Tests passing on every run, oldest first: how the work got there. */
+function RunChart({ runs }) {
+  const shown = runs.slice(-16);
   return (
-    <p className={`flex gap-2 rounded-lg px-2.5 py-2 ${tone === 'ok' ? 'bg-ok-soft' : 'bg-warn-soft'}`}>
-      <Icon className={`mt-0.5 size-3.5 shrink-0 ${tone === 'ok' ? 'text-ok' : 'text-warn'}`} aria-hidden />
-      <span className="line-clamp-2 text-ink-2">{text}</span>
-    </p>
+    <figure className="min-w-0">
+      <ol className="flex h-14 items-end gap-1" aria-label="Tests passing on each run">
+        {shown.map((run, index) => {
+          const share = run.totalCount ? run.passedCount / run.totalCount : 0;
+          return (
+            <li
+              key={`${run.ranAt}-${index}`}
+              title={`Run ${runs.length - shown.length + index + 1}: ${run.passedCount}/${run.totalCount}`}
+              className={`max-w-6 flex-1 rounded-t ${share === 1 ? 'bg-ok' : 'bg-accent/70'}`}
+              style={{ height: `${Math.max(6, share * 100)}%` }}
+            />
+          );
+        })}
+      </ol>
+      <figcaption className="mt-1.5 flex justify-between text-[11px] text-muted">
+        <span>First run</span>
+        <span>Tests passing per run</span>
+        <span>Submitted</span>
+      </figcaption>
+    </figure>
   );
 }
 
