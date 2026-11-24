@@ -1,7 +1,7 @@
 import { ArrowLeft, ChevronRight, Lightbulb, PanelRightClose } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { sessionsApi } from '../../../api/sessionsApi.js';
-import { TEAMMATES, TEAMMATES_BY_ID, roleTitle, threadFor } from '../teammates.js';
+import { TEAMMATES, TEAMMATES_BY_ID, roleTitle, threadFor, unasked } from '../teammates.js';
 import Avatar from './Avatar.jsx';
 import ChatThread from './ChatThread.jsx';
 import Composer from './Composer.jsx';
@@ -13,7 +13,7 @@ import Composer from './Composer.jsx';
  *
  * `request` ({ teammateId, text }) opens a teammate with a question ready to send.
  */
-export default function TeamSidebar({ session, onSessionChange, activePath, failingCheck, aiMode, request, onClose }) {
+export default function TeamSidebar({ session, onSessionChange, activePath, aiMode, request, onClose }) {
   const [selectedId, setSelectedId] = useState(null);
   const [typingId, setTypingId] = useState(null);
   const [shareFile, setShareFile] = useState(true);
@@ -56,7 +56,7 @@ export default function TeamSidebar({ session, onSessionChange, activePath, fail
   }
 
   const selected = selectedId ? TEAMMATES_BY_ID[selectedId] : null;
-  const online = aiMode === 'gemini';
+  const online = Boolean(aiMode) && aiMode !== 'fallback';
 
   return (
     <aside className="flex h-full min-h-0 flex-col bg-paper" aria-label="AI teammates">
@@ -94,7 +94,7 @@ export default function TeamSidebar({ session, onSessionChange, activePath, fail
           busy={typingId !== null}
           error={error}
           prefill={request?.teammateId === selected.id ? request : null}
-          suggestions={selected.suggestions({ fileName: activePath?.split('/').pop(), failingCheck })}
+          suggestions={session.suggestions?.[selected.id] ?? []}
           shareFile={shareFile}
           onShareFile={setShareFile}
           activePath={activePath}
@@ -222,7 +222,7 @@ function Conversation({
 
       <Composer
         placeholder={`Message ${teammate.name}…`}
-        suggestions={thread.length < 4 ? suggestions : []}
+        suggestions={unasked(suggestions, thread)}
         disabled={busy}
         prefill={prefill}
         onSend={(message) => onAsk({ message })}

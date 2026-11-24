@@ -218,7 +218,6 @@ function Codespace({ session, onSessionChange }) {
     navigate(pathForSession(submitted));
   }
 
-  const failingCheck = testResult?.tests.find((test) => test.kind === 'acceptance' && !test.passed)?.name;
   const dirty = new Set(files.tabs.filter((tab) => tab.content !== tab.saved).map((tab) => tab.path));
 
   const taskStatus = shownReview
@@ -346,7 +345,6 @@ function Codespace({ session, onSessionChange }) {
             session={session}
             onSessionChange={onSessionChange}
             activePath={files.activePath}
-            failingCheck={failingCheck}
             aiMode={aiMode}
             request={teamRequest}
             onClose={() => setTeamOpen(false)}

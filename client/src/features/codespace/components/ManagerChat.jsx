@@ -3,8 +3,7 @@ import { sessionsApi } from '../../../api/sessionsApi.js';
 import Avatar from './Avatar.jsx';
 import ChatThread from './ChatThread.jsx';
 import Composer from './Composer.jsx';
-
-const SUGGESTIONS = ['Who is affected by this?', 'Is there anything out of scope?', 'How urgent is it?'];
+import { unasked } from '../teammates.js';
 
 /**
  * The conversation with the Engineering Manager, continued from the briefing.
@@ -51,7 +50,7 @@ export default function ManagerChat({
       {error && <p className="shrink-0 px-4 pb-2 font-ui text-xs text-bad">{error}</p>}
       <Composer
         placeholder="Ask your manager…"
-        suggestions={session.managerMessages.length < 2 ? SUGGESTIONS : []}
+        suggestions={unasked(session.suggestions?.manager, session.managerMessages)}
         disabled={typing}
         onSend={send}
       />

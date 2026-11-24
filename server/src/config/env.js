@@ -14,6 +14,11 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(5050),
   CLIENT_ORIGIN: z.string().default('http://localhost:5173'),
+  // OpenAI is tried first when its key is set; Gemini next; then the prepared answers.
+  OPENAI_API_KEY: z.string().default(''),
+  OPENAI_MODEL: z.string().default('gpt-5.4-mini'),
+  // Lower is faster. Leave empty for a model that does not take a reasoning effort.
+  OPENAI_REASONING_EFFORT: z.enum(['', 'minimal', 'low', 'medium', 'high']).default('low'),
   GEMINI_API_KEY: z.string().default(''),
   GEMINI_MODEL: z.string().default('gemini-3.8-flash'),
   // Tried in order when the main model is overloaded, rate limited or slow.
@@ -36,6 +41,12 @@ export const config = Object.freeze({
   nodeEnv: env.NODE_ENV,
   port: env.PORT,
   clientOrigin: env.CLIENT_ORIGIN,
+  openai: Object.freeze({
+    apiKey: env.OPENAI_API_KEY,
+    model: env.OPENAI_MODEL,
+    reasoningEffort: env.OPENAI_REASONING_EFFORT || null,
+    enabled: env.OPENAI_API_KEY.trim().length > 0,
+  }),
   gemini: Object.freeze({
     apiKey: env.GEMINI_API_KEY,
     model: env.GEMINI_MODEL,

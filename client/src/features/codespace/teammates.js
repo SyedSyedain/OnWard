@@ -10,33 +10,18 @@ export const TEAMMATES = [
     name: 'Alex',
     role: 'Senior Backend Developer',
     helpsWith: 'Reading the code, debugging errors',
-    suggestions: ({ fileName }) => [
-      fileName ? `Walk me through what ${fileName} does.` : 'Where should I start reading?',
-      'How do these files connect?',
-      'How do I read the error I am getting?',
-    ],
   },
   {
     id: 'sarah',
     name: 'Sarah',
     role: 'QA Engineer',
     helpsWith: 'Edge cases, test scenarios, failed tests',
-    suggestions: ({ failingCheck }) => [
-      'Which edge cases should I test?',
-      failingCheck ? `What is the check “${failingCheck}” looking for?` : 'What should I verify before I submit?',
-      'How could this break in production?',
-    ],
   },
   {
     id: 'daniel',
     name: 'Daniel',
     role: 'Technical Mentor',
     helpsWith: 'Concepts and step-by-step hints',
-    suggestions: () => [
-      'What concept is behind this bug?',
-      'How should I approach this ticket?',
-      'Am I on the right track?',
-    ],
   },
 ];
 
@@ -55,4 +40,10 @@ export function roleTitle(teammate, roleId) {
 /** Messages from before teammates had names belong to Alex, matching the server. */
 export function threadFor(messages, teammateId) {
   return messages.filter((message) => (message.teammate ?? 'alex') === teammateId);
+}
+
+/** Up to `count` suggested questions the student has not asked yet in this thread, in order. */
+export function unasked(questions = [], thread = [], count = 3) {
+  const asked = new Set(thread.filter((message) => message.author === 'student').map((message) => message.text.trim()));
+  return questions.filter((question) => !asked.has(question)).slice(0, count);
 }

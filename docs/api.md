@@ -8,10 +8,10 @@ Base URL: `http://localhost:5050/api`. All bodies are JSON. Errors use
 ### `GET /health`
 
 ```json
-{ "status": "ok", "ai": "gemini" }
+{ "status": "ok", "ai": "openai" }
 ```
 
-`ai` is `"fallback"` when no Gemini key is configured.
+`ai` is the first configured provider (`"openai"` or `"gemini"`), or `"fallback"` when no AI key is set.
 
 ### `GET /simulations`
 
@@ -34,7 +34,8 @@ difficulty. Returns `201 { "session": Session }`.
 
 ### `GET /sessions/:sessionId`
 
-Returns `{ "session": Session }`.
+Returns `{ "session": Session }`. `session.suggestions` lists the suggested questions for the
+manager and each teammate (`manager`, `alex`, `sarah`, `daniel`).
 
 ### `POST /sessions/:sessionId/manager/messages`
 
@@ -93,7 +94,7 @@ Runs project tests plus the hidden acceptance checks. Returns `201 { "testResult
 
 `teammate` is `alex` (Senior Backend Developer, the default), `sarah` (QA Engineer) or `daniel`
 (Technical Mentor). Each keeps a separate thread; messages carry a `teammate` field, and replies carry
-`generatedBy: "gemini" | "template"`. `requestHint: true` unlocks the next hint level (maximum 4),
+`generatedBy: "openai" | "gemini" | "template"`. `requestHint: true` unlocks the next hint level (maximum 4),
 shared by all three. Returns `201 { "messages": ChatMessage[], "hintLevel": number }`.
 
 ### `GET /sessions/:sessionId/changes`
@@ -105,7 +106,7 @@ Files that differ from the original project. Returns `{ "changedFiles": string[]
 A review before the final submission: runs the tests and asks the reviewer to read the diff. The session
 stays `in_progress`, so the student can improve the work and ask again. Returns
 `201 { "review": { id, reviewedAt, changedFiles, testResult, review } }` and appends it to `session.reviews`.
-`review.aspects` rates edge cases, reliability and maintainability (1 to 5, with a note) when Gemini is
+`review.aspects` rates edge cases, reliability and maintainability (1 to 5, with a note) when live AI is
 configured. Template reviews fill it from rule-based checks on the diff and say so in the summary.
 
 ### `POST /sessions/:sessionId/submission`

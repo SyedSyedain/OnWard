@@ -57,7 +57,7 @@ flowchart LR
     Server --> Store[(Sessions and records<br/>JSON store)]
     Server --> Workspaces[(Per-session workspaces)]
     Server -->|child process + timeout| Runner[Test runner<br/>node --test]
-    Server -->|optional| Gemini[Google Gemini<br/>Manager · Teammate · Reviewer]
+    Server -->|optional| AI[OpenAI, then Gemini<br/>Manager · Teammate · Reviewer]
 ```
 
 More detail in [docs/architecture.md](docs/architecture.md).
@@ -68,7 +68,7 @@ More detail in [docs/architecture.md](docs/architecture.md).
 |---|---|
 | Client | React 19, Vite, Tailwind CSS 4, Monaco Editor, React Router, lucide-react |
 | Server | Node.js 24+, Express 5, zod, express-rate-limit |
-| AI | Google Gemini via `@google/genai` (optional) |
+| AI | OpenAI via `openai`, then Google Gemini via `@google/genai` (both optional) |
 | Testing | Node's built-in test runner (`node:test`) |
 
 ## Getting started
@@ -83,10 +83,11 @@ cp server/.env.example server/.env
 npm run dev            # API on :5050, web app on http://localhost:5173
 ```
 
-Gemini is optional. To enable it, create a key at [Google AI Studio](https://aistudio.google.com/apikey)
-and set `GEMINI_API_KEY` in `server/.env`. Check AI Studio for the current model name and set
-`GEMINI_MODEL` if it differs from the default. When that model is busy or rate limited, the server
-moves on to the models in `GEMINI_FALLBACK_MODELS`. Without a key, the app runs in fallback mode.
+Live AI is optional. Set `OPENAI_API_KEY` (and `OPENAI_MODEL` if you want a different model) and/or
+`GEMINI_API_KEY` in `server/.env`. OpenAI is tried first, then Gemini (and the models in
+`GEMINI_FALLBACK_MODELS`). Without a key, or while both are busy, every colleague answers from a prepared
+question bank: ten questions for the manager and seven or eight per teammate, each with its own answer
+built from the ticket.
 
 ### Running tests
 
@@ -102,7 +103,8 @@ The web client and the API deploy separately.
 for test runs, which serverless hosts cannot):
 
 1. New → Blueprint → pick this repository. Render reads [`render.yaml`](render.yaml).
-2. Set `CLIENT_ORIGIN` to the Vercel address of the web client, and `GEMINI_API_KEY` if you have one.
+2. Set `CLIENT_ORIGIN` to the Vercel address of the web client, and `OPENAI_API_KEY` and/or
+   `GEMINI_API_KEY` if you have them.
    `RECORD_SECRET` is generated for you.
 
 **Web client on [Vercel](https://vercel.com):**

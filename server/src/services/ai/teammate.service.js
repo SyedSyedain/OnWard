@@ -6,7 +6,8 @@
 
 import { chatReplySchema } from '../../schemas/ai.schemas.js';
 import { describeTicket } from './manager.service.js';
-import { generateStructured } from './geminiClient.js';
+import { generateStructured } from './llm.js';
+import { teammateAnswer } from './questionBank.js';
 import { formatConversation, renderPrompt } from './promptLoader.js';
 
 const MAX_FILE_CHARACTERS = 6000;
@@ -17,24 +18,18 @@ export const TEAMMATES = Object.freeze({
     title: 'Senior Developer',
     focus:
       'You know this codebase well. Help them read unfamiliar code: explain what existing functions do, how data flows between files, and how to read the error they hit.',
-    fallback:
-      'Let’s read it together. Open the file named in the ticket and find the function that handles this case. What does it receive, and what does it return? If an error appears, read its first line and tell me which file and line it points to.',
   },
   sarah: {
     name: 'Sarah',
     title: 'QA Engineer',
     focus:
       'You think about how code breaks. Help them find edge cases, suggest test scenarios worth trying, and explain what a failing test is checking.',
-    fallback:
-      'Before you change anything, list the cases: the normal path, the same action twice, an empty or missing value, and something that has expired or run out. Run the tests and pick the first failing check. What input does it use, and what did it expect?',
   },
   daniel: {
     name: 'Daniel',
     title: 'Technical Mentor',
     focus:
       'You teach. Explain the concept behind the problem in plain words, and give hints in small steps so they keep solving it themselves.',
-    fallback:
-      'Say the bug back to me in one sentence, in your own words. Then name the one rule the code should enforce. If you are still stuck after trying that, unlock a hint and I will point you a little closer.',
   },
 });
 
@@ -51,9 +46,9 @@ export function describeTeammate(teammateId, roleId) {
 }
 
 /**
- * @returns {Promise<{ text: string, generatedBy: 'gemini' | 'template' }>}
+ * @returns {Promise<{ text: string, generatedBy: 'openai' | 'gemini' | 'template' }>}
  */
-export async function reply({ teammateId, roleId, ticket, guide, history, message, hintLevel, hint, filePath, fileContent }) {
+export async function reply({ teammateId, roleId, ticket, context, guide, history, message, hintLevel, hint, filePath, fileContent }) {
   const teammate = describeTeammate(teammateId, roleId);
 
   const generated = await generateStructured({
@@ -76,23 +71,10 @@ export async function reply({ teammateId, roleId, ticket, guide, history, messag
   });
 
   if (generated) {
-    return { text: generated.reply, generatedBy: 'gemini' };
+    return { text: generated.data.reply, generatedBy: generated.provider };
   }
-  return { text: offlineReply({ teammate, guide, history, message, hint }), generatedBy: 'template' };
-}
-
-/**
- * Without live AI: a hint when one is asked for and unlocked, otherwise this teammate's prepared note
- * for the ticket. A reply already given in this thread is not repeated word for word.
- */
-function offlineReply({ teammate, guide, history, message, hint }) {
-  const askedForHint = /\bhint\b/i.test(message);
-  const candidates = askedForHint && hint ? [hint, guide] : [guide, hint];
-  const alreadySaid = new Set(history.filter((entry) => entry.author === 'teammate').map((entry) => entry.text));
-  const fresh = [...candidates, teammate.fallback].find((text) => text && !alreadySaid.has(text));
-
-  if (fresh) return fresh;
-  return hint
-    ? `${hint} If that is not enough, unlock the next hint and I will take you one step further.`
-    : `${teammate.fallback} When you are ready, unlock a hint and I will point you closer.`;
+  return {
+    text: teammateAnswer({ teammateId, ticket, context, roleId, guide, hint, filePath, fileContent, history, message }),
+    generatedBy: 'template',
+  };
 }

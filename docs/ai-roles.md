@@ -31,16 +31,21 @@ Every AI response is requested as JSON and validated with a zod schema
 
 ## Fallbacks
 
-`geminiClient.generateStructured` returns `null` when there is no API key, the request fails, it
-takes longer than 12 seconds on every model, or the output is invalid. A model that is overloaded, rate
-limited or slow is skipped for a minute and the next one in `GEMINI_FALLBACK_MODELS` is tried. When none
-answers, each role uses a deterministic fallback built from the ticket's prepared material:
+`llm.generateStructured` tries OpenAI first (`OPENAI_API_KEY`, `OPENAI_MODEL`), then Gemini
+(`GEMINI_API_KEY`, then each model in `GEMINI_FALLBACK_MODELS`). A provider that fails, is rate limited or
+returns invalid output is skipped for a while so students are not kept waiting; Gemini gives up after 10
+seconds in total. Every reply records which provider wrote it (`generatedBy`). When none answers, each
+role uses its prepared answers (`server/src/services/ai/questionBank.js`):
 
 | Role | Fallback |
 |---|---|
 | Manager: ticket | The issue's own title and symptoms |
-| Manager: chat | Matches the question to a topic (who is affected, priority, scope, how to reproduce, done, why, code) and answers from the issue's `context` |
-| Teammates | The teammate's own note for this ticket (`guide`: a code tour, edge cases or the concept), the unlocked hint when asked, and never the same reply twice in a row |
+| Manager: chat | Ten suggested questions (who is affected, urgency, how to reproduce, scope, done, why, files, refactoring, tests, who to ask), each with its own answer from the issue's `context`; typed questions are matched by their words |
+| Teammates | Seven or eight suggested questions each (Alex: reading code and errors; Sarah: edge cases and checks; Daniel: concepts, hints, approach), built from the teammate's `guide`, the unlocked hint and the shared file |
 | Reviewer | Rule-based checks on the diff (debug output, TODOs, commented-out code, size, files outside the ticket, tests added) that rate edge cases, reliability and maintainability; 0 for an empty diff |
 
 Because tests, not the AI, decide correctness, a fallback never changes whether a ticket is resolved.
+
+Each prepared answer has two wordings, so a repeated question gets a different reply, and a reply already
+given in the thread is never sent again word for word. The suggested questions are sent with the session
+(`suggestions`), and the chat shows the next three the student has not asked yet.

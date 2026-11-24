@@ -9,6 +9,7 @@ import { sessionsCollection } from '../store/index.js';
 import { createId } from '../utils/ids.js';
 import * as issueCatalog from './issueCatalog.service.js';
 import * as manager from './ai/manager.service.js';
+import { suggestedQuestions } from './ai/questionBank.js';
 import * as teammate from './ai/teammate.service.js';
 import * as workspace from './workspace.service.js';
 
@@ -71,6 +72,7 @@ export async function askManager(sessionId, message) {
   const reply = await manager.answerQuestion({
     ticket: session.ticket,
     context: issueCatalog.getContext(issue),
+    roleId: session.roleId,
     history: session.managerMessages,
     message,
   });
@@ -109,6 +111,7 @@ export async function askTeammate(sessionId, { teammate: teammateId, message, fi
     teammateId,
     roleId: session.roleId,
     ticket: session.ticket,
+    context: issueCatalog.getContext(issue),
     guide: issueCatalog.getGuide(issue, teammateId),
     history,
     message: studentMessage,
@@ -137,6 +140,7 @@ export function toPublicSession(session) {
     ...visible,
     reviews: reviews.map(toPublicReview),
     maxHintLevel: issueCatalog.MAX_HINT_LEVEL,
+    suggestions: suggestedQuestions(),
   };
 }
 

@@ -32,7 +32,7 @@ export default function ReviewView({ review, reviews, onSelect, onBack, onOpenFi
   const resolved = testResult.allPassed;
   const acceptance = testResult.tests.filter((test) => test.kind === 'acceptance');
   const failing = acceptance.filter((test) => !test.passed);
-  const live = verdict.generatedBy === 'gemini';
+  const live = verdict.generatedBy !== 'template';
   const steps = nextSteps({ testResult, changedFiles, verdict });
 
   async function finish() {

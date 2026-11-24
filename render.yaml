@@ -16,7 +16,10 @@ services:
       # The Vercel address of the web client, e.g. https://onward.vercel.app (used for CORS).
       - key: CLIENT_ORIGIN
         sync: false
-      # Optional. Without it every AI role uses its built-in fallback. Set it in the dashboard only.
+      # Optional AI keys, set in the dashboard only. OpenAI is tried first, then Gemini,
+      # then the prepared answers.
+      - key: OPENAI_API_KEY
+        sync: false
       - key: GEMINI_API_KEY
         sync: false
       - key: RECORD_SECRET

@@ -13,7 +13,7 @@ OnWard has three parts:
 Requests flow through the layers in one direction:
 
 ```
-route → middleware (validation, rate limit) → controller → service → store / file system / Gemini
+route → middleware (validation, rate limit) → controller → service → store / file system / OpenAI or Gemini
 ```
 
 - **Routes** map URLs to controllers and attach middleware.

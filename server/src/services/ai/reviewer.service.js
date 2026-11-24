@@ -5,7 +5,7 @@
 
 import { reviewSchema } from '../../schemas/ai.schemas.js';
 import { describeTicket } from './manager.service.js';
-import { generateStructured } from './geminiClient.js';
+import { generateStructured } from './llm.js';
 import { renderPrompt } from './promptLoader.js';
 
 const MAX_DIFF_CHARACTERS = 12000;
@@ -36,7 +36,7 @@ export async function reviewSubmission({ ticket, diff, testResult }) {
   });
 
   if (generated) {
-    return { ...generated, generatedBy: 'gemini' };
+    return { ...generated.data, generatedBy: generated.provider };
   }
   return fallbackReview({ ticket, diff, testResult, testSummary });
 }
