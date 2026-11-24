@@ -62,13 +62,13 @@ More detail in [docs/architecture.md](docs/architecture.md).
 | Layer | Tools |
 |---|---|
 | Client | React 19, Vite, Tailwind CSS 4, Monaco Editor, React Router, lucide-react |
-| Server | Node.js 22+, Express 5, zod, express-rate-limit |
+| Server | Node.js 24+, Express 5, zod, express-rate-limit |
 | AI | Google Gemini via `@google/genai` (optional) |
 | Testing | Node's built-in test runner (`node:test`) |
 
 ## Getting started
 
-**Requirements:** Node.js 22 or newer.
+**Requirements:** Node.js 24 or newer.
 
 ```bash
 git clone <repository-url> onward
