@@ -14,7 +14,7 @@ const MAX_FILE_CHARACTERS = 6000;
 export const TEAMMATES = Object.freeze({
   alex: {
     name: 'Alex',
-    title: 'Senior Backend Developer',
+    title: 'Senior Developer',
     focus:
       'You know this codebase well. Help them read unfamiliar code: explain what existing functions do, how data flows between files, and how to read the error they hit.',
     fallback:
@@ -38,11 +38,23 @@ export const TEAMMATES = Object.freeze({
   },
 });
 
+const ALEX_TITLES = {
+  'frontend-developer': 'Senior Frontend Developer',
+  'backend-developer': 'Senior Backend Developer',
+};
+
+/** A teammate's name and title on this team: Alex's title follows the role being practised. */
+export function describeTeammate(teammateId, roleId) {
+  const teammate = TEAMMATES[teammateId];
+  const title = teammateId === 'alex' ? (ALEX_TITLES[roleId] ?? teammate.title) : teammate.title;
+  return { ...teammate, title };
+}
+
 /**
  * @returns {Promise<{ text: string, generatedBy: 'gemini' | 'template' }>}
  */
-export async function reply({ teammateId, ticket, history, message, hintLevel, hint, filePath, fileContent }) {
-  const teammate = TEAMMATES[teammateId];
+export async function reply({ teammateId, roleId, ticket, guide, history, message, hintLevel, hint, filePath, fileContent }) {
+  const teammate = describeTeammate(teammateId, roleId);
 
   const generated = await generateStructured({
     purpose: `teammate.${teammateId}`,
@@ -52,6 +64,7 @@ export async function reply({ teammateId, ticket, history, message, hintLevel, h
       title: teammate.title,
       focus: teammate.focus,
       ticket: describeTicket(ticket),
+      guide: guide ?? '(none)',
       hintLevel: String(hintLevel),
       hint: hint ?? '(no hint unlocked yet: ask guiding questions only)',
       filePath: filePath ?? 'none',
@@ -65,5 +78,21 @@ export async function reply({ teammateId, ticket, history, message, hintLevel, h
   if (generated) {
     return { text: generated.reply, generatedBy: 'gemini' };
   }
-  return { text: hint ?? teammate.fallback, generatedBy: 'template' };
+  return { text: offlineReply({ teammate, guide, history, message, hint }), generatedBy: 'template' };
+}
+
+/**
+ * Without live AI: a hint when one is asked for and unlocked, otherwise this teammate's prepared note
+ * for the ticket. A reply already given in this thread is not repeated word for word.
+ */
+function offlineReply({ teammate, guide, history, message, hint }) {
+  const askedForHint = /\bhint\b/i.test(message);
+  const candidates = askedForHint && hint ? [hint, guide] : [guide, hint];
+  const alreadySaid = new Set(history.filter((entry) => entry.author === 'teammate').map((entry) => entry.text));
+  const fresh = [...candidates, teammate.fallback].find((text) => text && !alreadySaid.has(text));
+
+  if (fresh) return fresh;
+  return hint
+    ? `${hint} If that is not enough, unlock the next hint and I will take you one step further.`
+    : `${teammate.fallback} When you are ready, unlock a hint and I will point you closer.`;
 }

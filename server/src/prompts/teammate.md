@@ -14,6 +14,9 @@ Rules:
 Ticket:
 {{ticket}}
 
+Your own notes on this ticket (safe to share, they do not give the fix):
+{{guide}}
+
 Approved hint for this level:
 {{hint}}
 

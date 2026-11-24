@@ -9,6 +9,7 @@ const filePath = z.string().trim().min(1).max(200);
 export const createSessionBody = z.object({
   studentName: z.string().trim().min(2, 'Please enter your name.').max(60),
   difficulty: z.enum(['easy', 'medium', 'hard']),
+  roleId: z.enum(['frontend-developer', 'backend-developer']).default('backend-developer'),
 });
 
 export const chatMessageBody = z.object({

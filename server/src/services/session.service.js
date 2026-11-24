@@ -18,19 +18,15 @@ export const SESSION_STATUS = Object.freeze({
   SUBMITTED: 'submitted',
 });
 
-const DEFAULT_SIMULATION = 'shopsphere';
-const DEFAULT_ROLE = 'backend-developer';
-
-export async function createSession({ studentName, difficulty }) {
-  const simulationId = DEFAULT_SIMULATION;
-  const issue = issueCatalog.pickIssue(simulationId, difficulty);
+export async function createSession({ studentName, difficulty, roleId }) {
+  const { simulationId, issue } = issueCatalog.pickTicket(roleId, difficulty);
   const simulationName = issueCatalog.getSimulationName(simulationId);
   const ticket = await manager.writeTicket({ simulationName, publicIssue: issueCatalog.toPublicIssue(issue) });
 
   return sessionsCollection.save({
     id: createId('ses'),
     studentName,
-    roleId: DEFAULT_ROLE,
+    roleId,
     simulationId,
     simulationName,
     issueId: issue.id,
@@ -71,8 +67,17 @@ export async function askManager(sessionId, message) {
     throw AppError.conflict('This ticket is already submitted.', 'INVALID_SESSION_STATE');
   }
 
-  const reply = await manager.answerQuestion({ ticket: session.ticket, history: session.managerMessages, message });
-  session.managerMessages.push(chatMessage('student', message), chatMessage('manager', reply));
+  const issue = issueCatalog.getIssue(session.simulationId, session.issueId);
+  const reply = await manager.answerQuestion({
+    ticket: session.ticket,
+    context: issueCatalog.getContext(issue),
+    history: session.managerMessages,
+    message,
+  });
+  session.managerMessages.push(chatMessage('student', message), {
+    ...chatMessage('manager', reply.text),
+    generatedBy: reply.generatedBy,
+  });
   return saveSession(session);
 }
 
@@ -102,7 +107,9 @@ export async function askTeammate(sessionId, { teammate: teammateId, message, fi
 
   const reply = await teammate.reply({
     teammateId,
+    roleId: session.roleId,
     ticket: session.ticket,
+    guide: issueCatalog.getGuide(issue, teammateId),
     history,
     message: studentMessage,
     hintLevel: session.hintLevel,

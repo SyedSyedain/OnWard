@@ -25,10 +25,35 @@ export function getSimulationName(simulationId) {
   return loadManifest(simulationId).simulationName;
 }
 
-export function pickIssue(simulationId, difficulty) {
-  const candidates = loadManifest(simulationId).issues.filter((issue) => issue.difficulty === difficulty);
+/** Every simulation on disk, as { id, name, roleId, description, issueCount }. */
+export function listSimulations() {
+  return fs
+    .readdirSync(config.paths.privateData, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(config.paths.privateData, entry.name, 'manifest.json')))
+    .map((entry) => {
+      const manifest = loadManifest(entry.name);
+      return {
+        id: manifest.simulationId,
+        name: manifest.simulationName,
+        roleId: manifest.roleId ?? 'backend-developer',
+        description: manifest.description ?? '',
+        issueCount: manifest.issues.length,
+      };
+    })
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** Picks a codebase for the role that has a ticket at this difficulty, then a ticket in it. */
+export function pickTicket(roleId, difficulty) {
+  const candidates = listSimulations()
+    .filter((simulation) => simulation.roleId === roleId)
+    .flatMap((simulation) =>
+      loadManifest(simulation.id)
+        .issues.filter((issue) => issue.difficulty === difficulty)
+        .map((issue) => ({ simulationId: simulation.id, issue })),
+    );
   if (candidates.length === 0) {
-    throw AppError.badRequest(`No ${difficulty} tasks are available yet.`, 'NO_ISSUE_AVAILABLE');
+    throw AppError.badRequest(`No ${difficulty} tasks are available for this role yet.`, 'NO_ISSUE_AVAILABLE');
   }
   return candidates[Math.floor(Math.random() * candidates.length)];
 }
@@ -45,6 +70,19 @@ export function getIssue(simulationId, issueId) {
 export function toPublicIssue(issue) {
   const { id, difficulty, area, title, symptoms, relevantFiles, acceptanceCriteria } = issue;
   return { id, difficulty, area, title, symptoms, relevantFiles, acceptanceCriteria };
+}
+
+/**
+ * Requirement-level background the manager may share: who is affected, priority, scope
+ * and how to reproduce. It never describes the cause or the fix.
+ */
+export function getContext(issue) {
+  return issue.context ?? null;
+}
+
+/** A teammate's prepared note for this ticket (a code tour, edge cases or the concept), never the fix. */
+export function getGuide(issue, teammateId) {
+  return issue.guide?.[teammateId] ?? null;
 }
 
 /** Returns the hint for a level from 1 to 4, or null for level 0. */

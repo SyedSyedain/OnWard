@@ -52,8 +52,9 @@ test('full session flow issues a verifiable work record', async () => {
   const started = await call('POST', `/sessions/${session.id}/workspace`);
   assert.equal(started.body.session.status, 'in_progress');
 
+  const servicePath = session.ticket.relevantFiles[0];
   const files = await call('GET', `/sessions/${session.id}/files`);
-  assert.ok(files.body.files.includes('src/services/productService.js'));
+  assert.ok(files.body.files.includes(servicePath));
   assert.ok(!files.body.files.some((file) => file.includes('hidden')), 'hidden tests must not be in the workspace');
 
   const escape = await call('GET', `/sessions/${session.id}/files/content?path=../../private/shopsphere/manifest.json`);
@@ -73,7 +74,6 @@ test('full session flow issues a verifiable work record', async () => {
   const unchanged = await call('GET', `/sessions/${session.id}/changes`);
   assert.deepEqual(unchanged.body.changedFiles, []);
 
-  const servicePath = 'src/services/productService.js';
   const original = await call('GET', `/sessions/${session.id}/files/content?path=${servicePath}`);
   await call('PUT', `/sessions/${session.id}/files/content`, {
     path: servicePath,
@@ -117,4 +117,53 @@ test('invalid input returns a structured error', async () => {
   const response = await call('POST', '/sessions', { studentName: 'A', difficulty: 'impossible' });
   assert.equal(response.status, 400);
   assert.equal(response.body.error.code, 'VALIDATION_ERROR');
+});
+
+test('the catalogue offers frontend and backend codebases', async () => {
+  const { body } = await call('GET', '/simulations');
+  const byRole = Object.groupBy(body.simulations, (simulation) => simulation.roleId);
+  assert.ok(byRole['frontend-developer'].length >= 4);
+  assert.ok(byRole['backend-developer'].length >= 4);
+  assert.ok(body.simulations.every((simulation) => !('issues' in simulation)), 'tickets are not listed');
+});
+
+test('a frontend ticket gets answers written for that ticket when AI is off', async () => {
+  const created = await call('POST', '/sessions', {
+    studentName: 'Front End',
+    difficulty: 'medium',
+    roleId: 'frontend-developer',
+  });
+  const { session } = created.body;
+  assert.equal(session.roleId, 'frontend-developer');
+  const { body } = await call('GET', '/simulations');
+  const frontend = body.simulations.filter((simulation) => simulation.roleId === 'frontend-developer');
+  assert.ok(frontend.some((simulation) => simulation.id === session.simulationId));
+
+  const urgent = await call('POST', `/sessions/${session.id}/manager/messages`, { message: 'How urgent is this?' });
+  const answer = urgent.body.messages.at(-1);
+  assert.equal(answer.generatedBy, 'template');
+  assert.doesNotMatch(answer.text, /It is done when/, 'a priority question gets a priority answer');
+
+  await call('POST', `/sessions/${session.id}/workspace`);
+  const first = await call('POST', `/sessions/${session.id}/teammate/messages`, { message: 'Where do I start?' });
+  const second = await call('POST', `/sessions/${session.id}/teammate/messages`, { message: 'Where do I start?' });
+  const replies = second.body.messages.filter((message) => message.author === 'teammate').map((message) => message.text);
+  assert.equal(first.status, 201);
+  assert.notEqual(replies[0], replies[1], 'the same reply is not repeated');
+});
+
+test('the automatic review rates the change when AI is off', async () => {
+  const { session } = (await call('POST', '/sessions', { studentName: 'Reviewer Check', difficulty: 'easy' })).body;
+  await call('POST', `/sessions/${session.id}/workspace`);
+  const file = session.ticket.relevantFiles[0];
+  const original = await call('GET', `/sessions/${session.id}/files/content?path=${file}`);
+  await call('PUT', `/sessions/${session.id}/files/content`, {
+    path: file,
+    content: `${original.body.content}\nconsole.log('debug');\n`,
+  });
+  const { body } = await call('POST', `/sessions/${session.id}/reviews`);
+  const { review } = body.review;
+  assert.equal(review.generatedBy, 'template');
+  assert.ok(review.aspects.maintainability.rating < 5, 'leftover debug output lowers maintainability');
+  assert.ok(review.improvements.some((item) => item.includes('debugging output')));
 });
