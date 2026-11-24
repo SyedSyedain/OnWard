@@ -5,14 +5,17 @@ import { useEffect, useRef } from 'react';
  * Replies written from a server template (no live AI configured) say so under the bubble.
  */
 export default function ChatThread({ messages, them, typing, empty }) {
-  const bottomRef = useRef(null);
+  const listRef = useRef(null);
 
+  // Scroll the conversation itself, never the page around it.
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    const list = listRef.current;
+    list?.scrollTo({ top: list.scrollHeight, behavior: 'smooth' });
   }, [messages.length, typing]);
 
   return (
     <ol
+      ref={listRef}
       className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 font-ui text-[13.5px]"
       aria-live="polite"
     >
@@ -51,7 +54,6 @@ export default function ChatThread({ messages, them, typing, empty }) {
           {them} is typing
         </li>
       )}
-      <li ref={bottomRef} aria-hidden />
     </ol>
   );
 }
