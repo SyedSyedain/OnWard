@@ -15,3 +15,6 @@ export const aiLimiter = limiter(20, 'Too many AI requests. Please wait a minute
 
 /** Each test run starts a child process, so it is limited separately. */
 export const testRunLimiter = limiter(10, 'Too many test runs. Please wait a minute.');
+
+/** Restoring a lost record checks a signature and may write it back, so it is limited too. */
+export const restoreLimiter = limiter(30, 'Too many record requests. Please wait a minute.');

@@ -120,9 +120,17 @@ a record. Returns `201 { "session": Session }` with `session.result = { recordId
 
 Returns `{ "record": WorkRecord, "verified": boolean }`.
 
+### `POST /records/restore`
+
+Body `{ "record": WorkRecord }`: a signed copy the client kept, for when the server has lost the record
+(the free host wipes its disk on restart). The server re-checks the signature. A matching copy is stored
+again and returned with `verified: true`; an edited copy is returned with `verified: false` and never stored.
+If the server still has the record, its own copy is returned.
+
 ## Rate limits
 
 | Endpoints | Limit |
 |---|---|
 | Session creation, manager, teammate, reviews, submission | 20 requests per minute per IP |
 | Test runs | 10 per minute per IP |
+| Record restore | 30 per minute per IP |

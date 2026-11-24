@@ -24,6 +24,18 @@ export function getVerifiedRecord(recordId) {
   return { record: stored, verified: isAuthentic(stored) };
 }
 
+/**
+ * Brings back a record the server lost (the free host wipes its disk on restart), from a copy the
+ * student's browser or the shared link kept. Only a copy whose signature still matches is stored again;
+ * an edited copy is shown as unverified and never saved.
+ */
+export function restoreRecord(copy) {
+  const stored = recordsCollection.get(copy.id);
+  if (stored) return { record: stored, verified: isAuthentic(stored) };
+  if (!isAuthentic(copy)) return { record: copy, verified: false };
+  return { record: recordsCollection.save(copy), verified: true };
+}
+
 /** True when the record's signature matches its contents. */
 export function isAuthentic(record) {
   const { signature, ...payload } = record;

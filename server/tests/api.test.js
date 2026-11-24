@@ -113,6 +113,38 @@ test('a tampered record fails verification', async () => {
   assert.equal(isAuthentic({ ...record, score: { total: 100 } }), false);
 });
 
+test('a lost record comes back from a signed copy, and an edited copy does not', async () => {
+  const { issueRecord } = await import('../src/services/record.service.js');
+  const { recordsCollection } = await import('../src/store/index.js');
+  const record = issueRecord({ studentName: 'Restored Student', score: { total: 77 } });
+  const lostId = 'rec_lostcopy1';
+  const { signature: _, ...payload } = record;
+  // Re-issue the same contents under a new id the server has never stored, as if its disk was wiped.
+  const { createHmac } = await import('node:crypto');
+  const { canonicalJson } = await import('../src/services/record.service.js');
+  const { config } = await import('../src/config/env.js');
+  const lostPayload = { ...payload, id: lostId };
+  const lost = {
+    ...lostPayload,
+    signature: createHmac('sha256', config.recordSecret).update(canonicalJson(lostPayload)).digest('hex'),
+  };
+  assert.equal(recordsCollection.get(lostId), null);
+
+  const edited = await call('POST', '/records/restore', { record: { ...lost, score: { total: 100 } } });
+  assert.equal(edited.status, 200);
+  assert.equal(edited.body.verified, false);
+  assert.equal(recordsCollection.get(lostId), null);
+
+  const restored = await call('POST', '/records/restore', { record: lost });
+  assert.equal(restored.body.verified, true);
+  const fetched = await call('GET', `/records/${lostId}`);
+  assert.equal(fetched.body.verified, true);
+  assert.equal(fetched.body.record.score.total, 77);
+
+  const bad = await call('POST', '/records/restore', { record: { id: 'nope' } });
+  assert.equal(bad.status, 400);
+});
+
 test('invalid input returns a structured error', async () => {
   const response = await call('POST', '/sessions', { studentName: 'A', difficulty: 'impossible' });
   assert.equal(response.status, 400);

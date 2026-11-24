@@ -31,3 +31,12 @@ export const saveFileBody = z.object({
   path: filePath,
   content: z.string(),
 });
+
+/** A signed record copy kept by the browser or a shared link. The signature check decides if it is real. */
+export const restoreRecordBody = z.object({
+  record: z.looseObject({
+    id: z.string().regex(/^rec_[A-Za-z0-9_-]{4,40}$/),
+    issuedAt: z.string().max(40),
+    signature: z.string().regex(/^[0-9a-f]{64}$/),
+  }),
+});

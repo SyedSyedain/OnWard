@@ -7,6 +7,7 @@ import AppBar from '../../components/layout/AppBar.jsx';
 import { ScoreRing, ScoreSplit, SkillRadar, Stat, gradeFor } from '../../components/score/ScoreVisuals.jsx';
 import PageState from '../../components/ui/PageState.jsx';
 import { DIFFICULTY_LABELS } from '../../lib/constants.js';
+import { keepRecordCopy, putRecordCopyInLink, readRecordCopy, recordCopyFromHash } from '../../lib/recordCopies.js';
 
 /** The signed record a student shares with a recruiter: who, what, the score and how it was earned, on one screen. */
 export default function RecordPage() {
@@ -15,7 +16,20 @@ export default function RecordPage() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    recordsApi.get(recordId).then(setData).catch(setError);
+    let cancelled = false;
+    loadRecord(recordId)
+      .then((loaded) => {
+        if (cancelled) return;
+        setData(loaded);
+        if (loaded.verified) {
+          keepRecordCopy(loaded.record);
+          putRecordCopyInLink(loaded.record);
+        }
+      })
+      .catch((loadError) => !cancelled && setError(loadError));
+    return () => {
+      cancelled = true;
+    };
   }, [recordId]);
 
   if (!data) return <PageState error={error} />;
@@ -50,7 +64,11 @@ export default function RecordPage() {
                 verified ? 'bg-ok-soft text-ok' : 'bg-bad-soft text-bad'
               }`}
             >
-              {verified ? <ShieldCheck className="size-4" aria-hidden /> : <ShieldAlert className="size-4" aria-hidden />}
+              {verified ? (
+                <ShieldCheck className="size-4" aria-hidden />
+              ) : (
+                <ShieldAlert className="size-4" aria-hidden />
+              )}
               {verified ? 'Verified' : 'Signature invalid'}
             </span>
           </header>
@@ -77,7 +95,11 @@ export default function RecordPage() {
                   label="Acceptance checks"
                   value={`${record.tests.acceptancePassed}/${record.tests.acceptanceTotal}`}
                 />
-                <Stat icon={FlaskConical} label="Tests passing" value={`${record.tests.passed}/${record.tests.total}`} />
+                <Stat
+                  icon={FlaskConical}
+                  label="Tests passing"
+                  value={`${record.tests.passed}/${record.tests.total}`}
+                />
                 <Stat icon={Lightbulb} label="Hints used" value={`${record.process.hintLevelUsed}/4`} />
                 <Stat icon={Clock} label="Minutes" value={record.process.minutesSpent} />
                 <Stat icon={FlaskConical} label="Test runs" value={record.process.testRuns} />
@@ -97,11 +119,29 @@ export default function RecordPage() {
                 <br />
                 <span className="font-mono">{record.id}</span>
               </p>
-              <QRCodeSVG value={window.location.href} size={64} aria-label="QR code linking to this record" />
+              <QRCodeSVG
+                value={`${window.location.origin}${window.location.pathname}`}
+                size={64}
+                aria-label="QR code linking to this record"
+              />
             </div>
           </footer>
         </article>
       </main>
     </div>
   );
+}
+
+/**
+ * Asks the server for the record. If the server lost it (a restart on the free host), hands back the
+ * signed copy kept in this browser or carried in the link; the server checks the signature and stores it again.
+ */
+async function loadRecord(recordId) {
+  try {
+    return await recordsApi.get(recordId);
+  } catch (error) {
+    const copy = error.status === 404 ? (recordCopyFromHash(recordId) ?? readRecordCopy(recordId)) : null;
+    if (!copy) throw error;
+    return recordsApi.restore(copy);
+  }
 }

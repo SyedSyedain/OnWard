@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { sessionsApi } from '../api/sessionsApi.js';
-import { rememberSession } from '../lib/lastSession.js';
+import { forgetActiveSession, rememberSession } from '../lib/lastSession.js';
 
 /** Loads a session and exposes a setter so pages can apply server updates. */
 export function useSession(sessionId) {
@@ -13,6 +13,7 @@ export function useSession(sessionId) {
       setSession(data.session);
       setError(null);
     } catch (loadError) {
+      if (loadError.status === 404) forgetActiveSession(sessionId);
       setError(loadError);
     }
   }, [sessionId]);

@@ -17,6 +17,7 @@ import { ScoreRing, ScoreSplit, SkillRadar, Stat, gradeFor } from '../../compone
 import PageState from '../../components/ui/PageState.jsx';
 import { useSession } from '../../hooks/useSession.js';
 import { DIFFICULTY_LABELS } from '../../lib/constants.js';
+import { readHistory } from '../../lib/profile.js';
 import { pathForSession } from '../../lib/sessionRoutes.js';
 import DetailsDrawer from './DetailsDrawer.jsx';
 
@@ -29,7 +30,12 @@ export default function ReviewPage() {
   const { session, error } = useSession(sessionId);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  if (!session) return <PageState error={error} />;
+  if (!session) {
+    // The server lost this session (a restart on the free host): show its signed record instead.
+    const recordId = error?.status === 404 && readHistory().find((entry) => entry.sessionId === sessionId)?.recordId;
+    if (recordId) return <Navigate to={`/records/${recordId}`} replace />;
+    return <PageState error={error} />;
+  }
   if (session.status !== 'submitted') return <Navigate to={pathForSession(session)} replace />;
 
   const { score, review, testResult, diff, recordId } = session.result;
@@ -58,7 +64,9 @@ export default function ReviewPage() {
         <section className="flex flex-col items-center rounded-2xl border border-line bg-paper-2 p-6 text-center">
           <div className="flex flex-wrap justify-center gap-1.5 text-xs">
             <span className="rounded-md bg-ink px-1.5 py-0.5 font-mono text-paper-2">{session.ticket.issueId}</span>
-            <span className="rounded-md bg-accent-soft px-1.5 py-0.5">{DIFFICULTY_LABELS[session.ticket.difficulty]}</span>
+            <span className="rounded-md bg-accent-soft px-1.5 py-0.5">
+              {DIFFICULTY_LABELS[session.ticket.difficulty]}
+            </span>
             <span className={`rounded-md px-1.5 py-0.5 ${resolved ? 'bg-ok-soft text-ok' : 'bg-bad-soft text-bad'}`}>
               {resolved ? 'Resolved' : 'Not resolved'}
             </span>

@@ -1,0 +1,39 @@
+# Keeps the free Render API awake so judges never wait for a cold start and saved records are not wiped.
+# Render's free plan sleeps after 15 idle minutes. This job starts every 5 minutes (GitHub may run it late)
+# and pings three times, four minutes apart, so the gaps overlap even when a run is delayed.
+# It stops on its own after KEEP_ALIVE_UNTIL; change that date (or delete this file) to change it.
+name: Keep the API awake
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: keep-alive
+  cancel-in-progress: false
+
+permissions: {}
+
+env:
+  API_HEALTH_URL: https://onward-api-hhkm.onrender.com/api/health
+  SITE_URL: https://on-ward.vercel.app
+  KEEP_ALIVE_UNTIL: '2026-12-01'
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Ping the API and the site
+        run: |
+          if [ "$(date -u +%F)" \> "$KEEP_ALIVE_UNTIL" ]; then
+            echo "Past $KEEP_ALIVE_UNTIL, nothing to do."
+            exit 0
+          fi
+          for round in 1 2 3; do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 90 --retry 3 --retry-delay 10 "$API_HEALTH_URL" || true)
+            site=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$SITE_URL" || true)
+            echo "$(date -u +%T) round $round: api $code, site $site"
+            if [ "$round" -lt 3 ]; then sleep 240; fi
+          done
