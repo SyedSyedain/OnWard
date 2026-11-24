@@ -16,7 +16,7 @@ const ASPECTS = [
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /** 0 → 1 over `duration` ms once on mount (straight to 1 for reduced motion). */
-function useProgress(duration = 900, delay = 0) {
+export function useProgress(duration = 900, delay = 0) {
   const [progress, setProgress] = useState(0);
   useEffect(() => {
     if (reducedMotion()) {
