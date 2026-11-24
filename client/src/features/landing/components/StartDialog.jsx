@@ -1,16 +1,24 @@
-import { X } from 'lucide-react';
+import { PanelsTopLeft, Server, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sessionsApi } from '../../../api/sessionsApi.js';
+import { simulationsApi } from '../../../api/simulationsApi.js';
 import { pathForSession } from '../../../lib/sessionRoutes.js';
 import { DIFFICULTIES } from '../content.js';
 
+const ROLE_OPTIONS = [
+  { id: 'frontend-developer', title: 'Frontend developer', line: 'Components, state, accessibility', Icon: PanelsTopLeft },
+  { id: 'backend-developer', title: 'Backend developer', line: 'APIs, business rules, data', Icon: Server },
+];
+
 /** The start form, in a native <dialog> so focus and Escape work for free. */
-export default function StartDialog({ open, initialDifficulty = 'easy', onClose }) {
+export default function StartDialog({ open, initialDifficulty = 'easy', initialRole = 'frontend-developer', onClose }) {
   const dialogRef = useRef(null);
   const navigate = useNavigate();
   const [studentName, setStudentName] = useState('');
   const [difficulty, setDifficulty] = useState('easy');
+  const [roleId, setRoleId] = useState(initialRole);
+  const [simulations, setSimulations] = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
 
@@ -18,17 +26,30 @@ export default function StartDialog({ open, initialDifficulty = 'easy', onClose 
     const dialog = dialogRef.current;
     if (open && !dialog.open) {
       setDifficulty(initialDifficulty);
+      setRoleId(initialRole);
       dialog.showModal();
     }
     if (!open && dialog.open) dialog.close();
-  }, [open, initialDifficulty]);
+  }, [open, initialDifficulty, initialRole]);
+
+  // The codebase names are a nice-to-have; the form works without them.
+  useEffect(() => {
+    if (!open || simulations.length > 0) return;
+    simulationsApi
+      .list()
+      .then((data) => setSimulations(data.simulations))
+      .catch(() => {});
+  }, [open, simulations.length]);
+
+  const roleApps = simulations.filter((simulation) => simulation.roleId === roleId);
+  const ticketCount = roleApps.reduce((total, simulation) => total + simulation.issueCount, 0);
 
   async function handleSubmit(event) {
     event.preventDefault();
     setSubmitting(true);
     setError(null);
     try {
-      const { session } = await sessionsApi.create({ studentName, difficulty });
+      const { session } = await sessionsApi.create({ studentName, difficulty, roleId });
       navigate(pathForSession(session));
     } catch (createError) {
       setError(createError);
@@ -51,6 +72,28 @@ export default function StartDialog({ open, initialDifficulty = 'easy', onClose 
             <X aria-hidden="true" />
           </button>
         </header>
+
+        <fieldset className="choice">
+          <legend className="field__label">Role</legend>
+          <div className="rolepick">
+            {ROLE_OPTIONS.map(({ id, title, line, Icon }) => (
+              <label key={id} className="rolepick__option">
+                <input
+                  type="radio"
+                  name="role"
+                  value={id}
+                  checked={roleId === id}
+                  onChange={() => setRoleId(id)}
+                />
+                <span className="rolepick__card">
+                  <Icon aria-hidden="true" />
+                  <span className="rolepick__title">{title}</span>
+                  <span className="rolepick__line">{line}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
 
         <label className="field">
           <span className="field__label">Your name, as it should appear on the record</span>
@@ -83,7 +126,12 @@ export default function StartDialog({ open, initialDifficulty = 'easy', onClose 
           </div>
         </fieldset>
 
-        <p className="dialog__role">Role: Backend developer, ShopSphere.</p>
+        {roleApps.length > 0 && (
+          <p className="dialog__role">
+            {ticketCount} tickets across {roleApps.map((simulation) => simulation.name).join(', ')}. You get one
+            at random.
+          </p>
+        )}
 
         {error && (
           <p className="dialog__error" role="alert">

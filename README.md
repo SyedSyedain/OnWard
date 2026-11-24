@@ -25,9 +25,14 @@ resume, and a certificate only proves attendance.
 | Step | What the student does | Who helps |
 |---|---|---|
 | 1. Briefing | Reads a ticket and asks clarifying questions | **AI Engineering Manager** writes the ticket and answers requirement questions, never the solution |
-| 2. Workspace | Reads, edits and tests a working e-commerce backend (ShopSphere) in a browser editor | **AI Teammate** guides with questions and four levels of hints |
+| 2. Codespace | Reads, edits and tests a working codebase in a browser editor: one of 4 frontend apps or 4 backend services | **AI Teammate** guides with questions and four levels of hints |
 | 3. Review | Submits the change | **Hidden acceptance tests** decide the result; **AI Reviewer** explains the change and rates code quality |
 | 4. Record | Shares a **Verified Work Record** with a QR code | The record is HMAC-signed, so any edit breaks verification |
+
+Students pick a role when they start. There are 40 tickets: 20 frontend tickets across four apps
+(Pulsewave music player, Nestly home rentals, TaskFlow kanban board, MediTrack clinic booking) and 20
+backend tickets across four services (ShopSphere store, Ledgerly expense splitting, Ridewise ride
+hailing, Libris library lending), each codebase with five different bugs at easy, medium and hard.
 
 The record shows *how* the student worked, not just the result: tests passed, hint level used,
 questions asked, test runs and time spent.
@@ -86,7 +91,7 @@ moves on to the models in `GEMINI_FALLBACK_MODELS`. Without a key, the app runs 
 ### Running tests
 
 ```bash
-npm test               # server tests + ShopSphere project tests
+npm test               # server tests + every simulation's project tests
 ```
 
 ## Deployment
@@ -133,7 +138,8 @@ onward/
 │   │   └── store/             JSON-file persistence (swappable for a database)
 │   └── tests/                 unit and API tests
 ├── simulations/
-│   └── shopsphere/            the codebase students work on
+│   ├── pulsewave/ nestly/ taskflow/ meditrack/    frontend apps (vanilla JS)
+│   └── shopsphere/ ledgerly/ ridewise/ libris/    backend services (Node)
 ├── docs/                      architecture, AI roles, API and security notes
 └── scripts/                   developer scripts
 ```

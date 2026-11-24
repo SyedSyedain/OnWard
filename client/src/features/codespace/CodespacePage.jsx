@@ -24,7 +24,7 @@ import { useOpenFiles } from './hooks/useOpenFiles.js';
 import { describeTestRun, useTerminal } from './hooks/useTerminal.js';
 
 const LEFT_WIDTH = 272;
-const RIGHT_WIDTH = 340;
+const RIGHT_WIDTH = 380;
 
 /** The Codespace: route `/sessions/:sessionId/workspace`, for sessions in progress. */
 export default function CodespacePage() {
@@ -89,7 +89,7 @@ function Codespace({ session, onSessionChange }) {
     readFile: async (path) => (await sessionsApi.readFile(session.id, path)).content,
     openFile: (path) => files.openFile(path),
     listChanges: refreshChanges,
-  });
+  }, session?.simulationId);
 
   async function runTests({ fromTerminal = false } = {}) {
     if (testing) return;

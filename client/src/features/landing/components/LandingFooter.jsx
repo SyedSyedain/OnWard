@@ -27,7 +27,7 @@ export default function LandingFooter({ onStart, inert }) {
                 {column.items?.map((item) => (
                   <li key={item.label} className="footer__item">
                     {item.startsSimulation ? (
-                      <button type="button" className="footer__action" onClick={onStart}>
+                      <button type="button" className="footer__action" onClick={() => onStart(item.startsSimulation)}>
                         {item.label}
                       </button>
                     ) : (

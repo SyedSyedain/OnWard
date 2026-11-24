@@ -1,7 +1,7 @@
 import { ArrowLeft, ChevronRight, Lightbulb, PanelRightClose } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { sessionsApi } from '../../../api/sessionsApi.js';
-import { TEAMMATES, TEAMMATES_BY_ID, threadFor } from '../teammates.js';
+import { TEAMMATES, TEAMMATES_BY_ID, roleTitle, threadFor } from '../teammates.js';
 import Avatar from './Avatar.jsx';
 import ChatThread from './ChatThread.jsx';
 import Composer from './Composer.jsx';
@@ -122,7 +122,7 @@ export default function TeamSidebar({ session, onSessionChange, activePath, fail
                     <span className="min-w-0 flex-1 font-ui">
                       <span className="flex items-baseline gap-2">
                         <span className="text-sm font-medium text-ink">{teammate.name}</span>
-                        <span className="truncate text-xs text-muted">{teammate.role}</span>
+                        <span className="truncate text-xs text-muted">{roleTitle(teammate, session.roleId)}</span>
                       </span>
                       <span className="block truncate text-xs text-faint">
                         {thread.length ? lastLine(thread) : teammate.helpsWith}
@@ -176,7 +176,7 @@ function Conversation({
         <div className="min-w-0 font-ui">
           <p className="text-sm font-medium text-ink">{teammate.name}</p>
           <p className="truncate text-xs text-muted">
-            {teammate.role} · {online ? 'Online' : 'Offline guidance'}
+            {roleTitle(teammate, session.roleId)} · {online ? 'Online' : 'Offline guidance'}
           </p>
         </div>
       </div>
@@ -211,7 +211,7 @@ function Conversation({
 
       <ChatThread
         messages={thread}
-        them={teammate.name}
+        who={{ id: teammate.id, name: teammate.name }}
         typing={typing}
         empty={`Ask ${teammate.name} about ${teammate.helpsWith.toLowerCase()}.${
           teammate.id === 'daniel' ? ' Each hint you unlock lowers your independence score a little.' : ''

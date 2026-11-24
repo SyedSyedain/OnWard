@@ -6,7 +6,7 @@ OnWard has three parts:
 |---|---|---|
 | Client | `client/` | The student-facing web app |
 | Server | `server/` | Sessions, workspaces, test runs, AI roles, work records |
-| Simulations | `simulations/` | Codebases students work on (currently ShopSphere) |
+| Simulations | `simulations/` | Codebases students work on: four frontend apps and four backend services |
 
 ## Server layers
 
@@ -39,9 +39,10 @@ stateDiagram-v2
     submitted --> [*]
 ```
 
-1. **Create.** The server picks an issue of the chosen difficulty from the private manifest. The
+1. **Create.** The server picks a codebase for the chosen role and an issue of the chosen difficulty
+   from its private manifest. The
    AI Manager writes the ticket from the issue's public fields.
-2. **Start work.** ShopSphere is copied into a workspace folder for this session.
+2. **Start work.** That codebase is copied into a workspace folder for this session.
 3. **Work.** In the Codespace the student reads and edits files, runs tests, asks the teammates and can request
    reviews, improving the work between them.
 4. **Submit.** Tests run one final time, a diff is computed against the original project, the Reviewer

@@ -42,6 +42,16 @@ export const TEAMMATES = [
 
 export const TEAMMATES_BY_ID = Object.fromEntries(TEAMMATES.map((teammate) => [teammate.id, teammate]));
 
+const ALEX_ROLES = {
+  'frontend-developer': 'Senior Frontend Developer',
+  'backend-developer': 'Senior Backend Developer',
+};
+
+/** A teammate's job title on this team: Alex's follows the role being practised. */
+export function roleTitle(teammate, roleId) {
+  return teammate.id === 'alex' ? (ALEX_ROLES[roleId] ?? teammate.role) : teammate.role;
+}
+
 /** Messages from before teammates had names belong to Alex, matching the server. */
 export function threadFor(messages, teammateId) {
   return messages.filter((message) => (message.teammate ?? 'alex') === teammateId);

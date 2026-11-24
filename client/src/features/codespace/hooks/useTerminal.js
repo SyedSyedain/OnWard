@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState } from 'react';
 
-const PROMPT = 'shopsphere $';
 const MAX_LINES = 400;
 
 export const TERMINAL_HELP = [
@@ -19,9 +18,10 @@ export const TERMINAL_HELP = [
  * (the test runner, the file API, the change list); anything else is refused
  * plainly rather than pretending to run.
  *
- * `actions` = { runTests, files, readFile, openFile, listChanges }
+ * `actions` = { runTests, files, readFile, openFile, listChanges }; `project` names the prompt.
  */
-export function useTerminal(actions) {
+export function useTerminal(actions, project = 'project') {
+  const prompt = `${project} $`;
   const [lines, setLines] = useState(() => [
     { kind: 'info', text: 'Workspace ready. Type “help” for commands, or “npm test” to run the tests.' },
   ]);
@@ -40,7 +40,7 @@ export function useTerminal(actions) {
       const command = input.trim();
       if (!command) return;
       history.current.push(command);
-      print({ kind: 'command', text: `${PROMPT} ${command}` });
+      print({ kind: 'command', text: `${prompt} ${command}` });
 
       const [name, ...args] = command.split(/\s+/);
       const target = args.join(' ');
@@ -97,10 +97,10 @@ export function useTerminal(actions) {
         setBusy(false);
       }
     },
-    [print],
+    [print, prompt],
   );
 
-  return { lines, print, run, busy, history: history.current, prompt: PROMPT };
+  return { lines, print, run, busy, history: history.current, prompt };
 }
 
 /** Immediate children of a folder: sub-folders end with "/". */

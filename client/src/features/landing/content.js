@@ -102,8 +102,8 @@ export const TEAM = [
 export const HINT_LIMIT = 4;
 
 export const ROLES = [
+  { id: 'frontend-developer', title: 'Frontend developer', line: 'Components, state, accessibility.', open: true },
   { id: 'backend-developer', title: 'Backend developer', line: 'APIs, rules and consistent data.', open: true },
-  { id: 'frontend-developer', title: 'Frontend developer', line: 'Components, state, accessibility.', open: false },
   { id: 'data-analyst', title: 'Data analyst', line: 'Queries that answer one question.', open: false },
   { id: 'devops-engineer', title: 'DevOps engineer', line: 'Pipelines, deploys, alerts.', open: false },
 ];
@@ -142,7 +142,7 @@ export const FLOW = [
 export const SECTION_NOTES = {
   flow: 'What happens in one simulation, from the ticket to a signed record.',
   team: 'Three AI colleagues, each with one job. None of them writes your fix.',
-  roles: 'Each role is its own codebase. Backend is open today.',
+  roles: 'Each role has its own codebases. Frontend and backend are open today.',
   record: 'Pass the hidden checks and get a signed record to share.',
 };
 
@@ -166,8 +166,8 @@ export const FOOTER_COLUMNS = [
   {
     title: 'Simulations',
     items: [
-      { label: 'ShopSphere backend', status: 'Open', startsSimulation: true },
-      { label: 'Storefront frontend', status: 'Soon' },
+      { label: 'Frontend apps', status: 'Open', startsSimulation: 'frontend-developer' },
+      { label: 'Backend services', status: 'Open', startsSimulation: 'backend-developer' },
       { label: 'Data and DevOps', status: 'Soon' },
     ],
   },

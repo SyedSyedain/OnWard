@@ -27,7 +27,7 @@ export default function RolesSection({ onStart }) {
           {ROLES.map((role, index) => (
             <li key={role.id} style={{ '--i': index }}>
               {role.open ? (
-                <button type="button" className="rcard" onClick={() => onStart()}>
+                <button type="button" className="rcard" onClick={() => onStart('easy', role.id)}>
                   <RoleCard role={role} />
                 </button>
               ) : (

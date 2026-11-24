@@ -1,11 +1,10 @@
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { useState } from 'react';
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { sessionsApi } from '../../api/sessionsApi.js';
-import Mark from '../../components/brand/Mark.jsx';
+import AppBar from '../../components/layout/AppBar.jsx';
 import PageState from '../../components/ui/PageState.jsx';
 import { useSession } from '../../hooks/useSession.js';
-import { ROLES } from '../../lib/constants.js';
 import { pathForSession } from '../../lib/sessionRoutes.js';
 import ManagerChat from '../codespace/components/ManagerChat.jsx';
 import TicketCard from './TicketCard.jsx';
@@ -23,8 +22,6 @@ export default function BriefingPage() {
 
   if (!session) return <PageState error={error} />;
   if (session.status !== 'briefing') return <Navigate to={pathForSession(session)} replace />;
-
-  const role = ROLES.find((item) => item.id === session.roleId)?.title ?? session.roleId;
 
   async function startWorking() {
     setStarting(true);
@@ -52,26 +49,9 @@ export default function BriefingPage() {
 
   return (
     <div className="min-h-screen bg-paper">
-      <header className="sticky top-0 z-10 bg-ink font-ui text-paper-2">
-        <div className="mx-auto flex h-12 max-w-6xl items-center gap-3 px-4 sm:px-6">
-          <Link
-            to="/"
-            className="flex items-center gap-2 rounded-md py-1 font-display text-[15px] font-semibold focus-visible:outline-2 focus-visible:outline-accent"
-            aria-label="OnWard home"
-          >
-            <Mark className="size-6" ringClassName="fill-paper-2" arrowClassName="fill-accent" />
-            <span className="hidden sm:inline">OnWard</span>
-          </Link>
-          <span className="hidden h-5 w-px bg-ink-3 sm:block" aria-hidden />
-          <p className="hidden min-w-0 flex-col leading-tight sm:flex">
-            <span className="truncate text-[13px] font-medium">{session.simulationName}</span>
-            <span className="truncate text-[11px] text-faint">{role}</span>
-          </p>
-          <span className="flex-1" />
-          <span className="hidden text-xs text-faint md:inline">Briefing, then the Codespace</span>
-          {startButton('Start working')}
-        </div>
-      </header>
+      <AppBar session={session} note="Briefing, then the Codespace">
+        {startButton('Start working')}
+      </AppBar>
 
       <main className="mx-auto max-w-6xl px-4 pb-12 pt-8 sm:px-6 sm:pt-10">
         <div className="mb-6 max-w-2xl font-ui">

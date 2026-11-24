@@ -3,7 +3,7 @@ import { request } from './httpClient.js';
 const sessionPath = (sessionId) => `/sessions/${encodeURIComponent(sessionId)}`;
 
 export const sessionsApi = {
-  create: ({ studentName, difficulty }) => request('POST', '/sessions', { studentName, difficulty }),
+  create: ({ studentName, difficulty, roleId }) => request('POST', '/sessions', { studentName, difficulty, roleId }),
   get: (sessionId) => request('GET', sessionPath(sessionId)),
   askManager: (sessionId, message) => request('POST', `${sessionPath(sessionId)}/manager/messages`, { message }),
   startWork: (sessionId) => request('POST', `${sessionPath(sessionId)}/workspace`),

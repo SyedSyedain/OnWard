@@ -32,13 +32,15 @@ Every AI response is requested as JSON and validated with a zod schema
 ## Fallbacks
 
 `geminiClient.generateStructured` returns `null` when there is no API key, the request fails, it
-takes longer than 20 seconds, or the output is invalid. Each role then uses a deterministic fallback:
+takes longer than 12 seconds on every model, or the output is invalid. A model that is overloaded, rate
+limited or slow is skipped for a minute and the next one in `GEMINI_FALLBACK_MODELS` is tried. When none
+answers, each role uses a deterministic fallback built from the ticket's prepared material:
 
 | Role | Fallback |
 |---|---|
 | Manager: ticket | The issue's own title and symptoms |
-| Manager: chat | Restates the acceptance criteria and points to the Teammate |
-| Teammates | Return the approved hint text, or a short written prompt in that teammate's voice at level 0 |
-| Reviewer | A rule-based summary; quality 18 if resolved and focused, otherwise 10; 0 for an empty diff |
+| Manager: chat | Matches the question to a topic (who is affected, priority, scope, how to reproduce, done, why, code) and answers from the issue's `context` |
+| Teammates | The teammate's own note for this ticket (`guide`: a code tour, edge cases or the concept), the unlocked hint when asked, and never the same reply twice in a row |
+| Reviewer | Rule-based checks on the diff (debug output, TODOs, commented-out code, size, files outside the ticket, tests added) that rate edge cases, reliability and maintainability; 0 for an empty diff |
 
 Because tests, not the AI, decide correctness, a fallback never changes whether a ticket is resolved.

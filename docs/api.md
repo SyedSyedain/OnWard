@@ -13,6 +13,11 @@ Base URL: `http://localhost:5050/api`. All bodies are JSON. Errors use
 
 `ai` is `"fallback"` when no Gemini key is configured.
 
+### `GET /simulations`
+
+The codebases students can be placed in, without any ticket details:
+`{ "simulations": [{ "id", "name", "roleId", "description", "issueCount" }] }`.
+
 ## Sessions
 
 ### `POST /sessions`
@@ -20,10 +25,12 @@ Base URL: `http://localhost:5050/api`. All bodies are JSON. Errors use
 Creates a session and its ticket.
 
 ```json
-{ "studentName": "Asha Rao", "difficulty": "easy" }
+{ "studentName": "Asha Rao", "difficulty": "easy", "roleId": "frontend-developer" }
 ```
 
-`difficulty` is `easy`, `medium` or `hard`. Returns `201 { "session": Session }`.
+`difficulty` is `easy`, `medium` or `hard`. `roleId` is `frontend-developer` or `backend-developer`
+(default `backend-developer`); the server picks a codebase for that role with a ticket at that
+difficulty. Returns `201 { "session": Session }`.
 
 ### `GET /sessions/:sessionId`
 
@@ -99,7 +106,7 @@ A review before the final submission: runs the tests and asks the reviewer to re
 stays `in_progress`, so the student can improve the work and ask again. Returns
 `201 { "review": { id, reviewedAt, changedFiles, testResult, review } }` and appends it to `session.reviews`.
 `review.aspects` rates edge cases, reliability and maintainability (1 to 5, with a note) when Gemini is
-configured, and is `null` for template reviews.
+configured. Template reviews fill it from rule-based checks on the diff and say so in the summary.
 
 ### `POST /sessions/:sessionId/submission`
 

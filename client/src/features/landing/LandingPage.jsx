@@ -32,9 +32,10 @@ export default function LandingPage() {
   const [start, setStart] = useState(() => ({
     open: new URLSearchParams(window.location.search).has('start'),
     difficulty: 'easy',
+    roleId: 'frontend-developer',
   }));
   const [returnPoint] = useState(readReturnPoint);
-  const openStart = (difficulty = 'easy') => setStart({ open: true, difficulty });
+  const openStart = (difficulty = 'easy', roleId = 'frontend-developer') => setStart({ open: true, difficulty, roleId });
   // 'playing' while the intro covers the page, 'done' once it has opened, null when skipped entirely.
   const [intro, setIntro] = useState(() => (shouldPlayIntro() ? 'playing' : null));
   const playing = intro === 'playing';
@@ -62,10 +63,11 @@ export default function LandingPage() {
         <RecordSection />
         <ClosingSection onStart={openStart} />
       </main>
-      <LandingFooter onStart={() => openStart()} inert={playing} />
+      <LandingFooter onStart={(roleId) => openStart('easy', roleId)} inert={playing} />
       <StartDialog
         open={start.open}
         initialDifficulty={start.difficulty}
+        initialRole={start.roleId}
         onClose={() => setStart((current) => ({ ...current, open: false }))}
       />
     </div>

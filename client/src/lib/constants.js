@@ -1,15 +1,15 @@
 export const ROLES = [
   {
+    id: 'frontend-developer',
+    title: 'Frontend Developer',
+    description: 'Interfaces, state and accessibility.',
+    available: true,
+  },
+  {
     id: 'backend-developer',
     title: 'Backend Developer',
     description: 'APIs, business logic and data consistency.',
     available: true,
-  },
-  {
-    id: 'frontend-developer',
-    title: 'Frontend Developer',
-    description: 'Interfaces, state and accessibility.',
-    available: false,
   },
   { id: 'data-analyst', title: 'Data Analyst', description: 'Queries, dashboards and insights.', available: false },
   {

@@ -44,7 +44,7 @@ export default function ManagerChat({
       </div>
       <ChatThread
         messages={session.managerMessages}
-        them="Your manager"
+        who={{ id: 'manager', name: 'Manager' }}
         typing={typing}
         empty={empty}
       />
