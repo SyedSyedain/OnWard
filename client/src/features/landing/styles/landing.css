@@ -1160,60 +1160,6 @@
   color: var(--color-error);
   font-size: var(--text-sm);
 }
-.profilechip {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm);
-  border: var(--rule-hair) solid var(--color-rule);
-  border-radius: var(--radius-pill);
-  background: var(--color-sheet);
-}
-.profilechip__avatar {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-pill);
-  background: var(--color-ink);
-  color: var(--color-paper-2);
-  font-family: var(--font-display);
-  font-size: var(--text-sm);
-  font-weight: 600;
-}
-.profilechip__text {
-  display: grid;
-  min-width: 0;
-  flex: 1;
-}
-.profilechip__name {
-  font-weight: 600;
-}
-.profilechip__email {
-  overflow: hidden;
-  color: var(--color-muted);
-  font-size: var(--text-sm);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.profilechip__edit {
-  padding: var(--space-xs) var(--space-sm);
-  border: 0;
-  border-radius: var(--radius-pill);
-  background: transparent;
-  color: var(--color-muted);
-  font: inherit;
-  font-size: var(--text-sm);
-  cursor: pointer;
-}
-.profilechip__edit:hover {
-  background: var(--color-paper-3);
-  color: var(--color-ink);
-}
-.profilechip__edit:focus-visible {
-  outline: 2px solid var(--color-focus);
-  outline-offset: 2px;
-}
 
 /* ── section heads: each part of the page, with one light line on its use ── */
 .shead {

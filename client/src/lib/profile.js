@@ -35,20 +35,6 @@ export function saveProfile({ name, email, roleId }) {
   migrateLegacyHistory();
 }
 
-/**
- * Forgets who is signed in on this browser. Their tickets stay under their email,
- * so logging back in with it shows them again.
- */
-export function logOut() {
-  try {
-    localStorage.removeItem(PROFILE_KEY);
-    localStorage.removeItem(RETURN_KEY);
-  } catch {
-    // Nothing to clear when storage is unavailable.
-  }
-  listeners.forEach((listener) => listener());
-}
-
 /** Submitted tickets for the signed-in student, newest first. */
 export function readHistory() {
   return read(currentHistoryKey(), []);

@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 import { pathForSession } from '../../../lib/sessionRoutes.js';
 import { NAV_LINKS } from '../content.js';
 import Mark from '../../../components/brand/Mark.jsx';
-import { useProfile } from '../../../lib/profile.js';
 
 /** A small floating pill, fixed so it travels with the scroll. Its shadow deepens once the page scrolls. */
 export default function LandingNav({ onStart, returnPoint, inert }) {
   const resume = resumeLink(returnPoint);
-  const { profile } = useProfile();
   const [raised, setRaised] = useState(false);
   const [activeId, setActiveId] = useState(null);
 
@@ -51,11 +49,6 @@ export default function LandingNav({ onStart, returnPoint, inert }) {
             {resume.label}
           </Link>
         )}
-        {profile && (
-          <Link to="/profile" className="key key--small nav__resume">
-            Profile
-          </Link>
-        )}
         <button type="button" className="key key--small key--primary" onClick={onStart}>
           Start
         </button>
@@ -69,11 +62,10 @@ export function LandingMark() {
   return <Mark className="wordmark__mark" ringClassName="mark__ring" arrowClassName="mark__arrow" />;
 }
 
-/** Where a returning visitor left off: an unfinished ticket first, otherwise the record they earned. */
+/** Where a returning visitor left off: their unfinished ticket, if any. */
 function resumeLink(returnPoint) {
   if (returnPoint?.active) {
     return { to: pathForSession(returnPoint.active), label: `Continue ${returnPoint.active.issueId}` };
   }
-  if (returnPoint?.recordId) return { to: `/records/${returnPoint.recordId}`, label: 'Your record' };
   return null;
 }
