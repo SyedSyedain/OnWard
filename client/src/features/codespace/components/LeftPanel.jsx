@@ -1,4 +1,4 @@
-import { ArrowLeft, ClipboardList, Files, MessagesSquare, PanelLeftClose } from 'lucide-react';
+import { ArrowLeft, ClipboardList, Files, KeyRound, MessagesSquare, PanelLeftClose } from 'lucide-react';
 import ManagerChat from './ManagerChat.jsx';
 import ProjectExplorer from './ProjectExplorer.jsx';
 import TaskPanel from './TaskPanel.jsx';
@@ -9,9 +9,15 @@ export const LEFT_VIEWS = [
   { id: 'manager', label: 'Manager', icon: MessagesSquare },
 ];
 
+/** Shown only when the server runs in demo mode. */
+export const SOLUTION_VIEW = { id: 'solution', label: 'Solution (demo)', icon: KeyRound };
+
+const viewsFor = (demo) => (demo ? [...LEFT_VIEWS, SOLUTION_VIEW] : LEFT_VIEWS);
+
 /** The left column: the project explorer, the task, or the manager conversation. */
-export default function LeftPanel({ view, onView, onClose, showSwitcher, explorer, task, manager }) {
-  const current = LEFT_VIEWS.find((entry) => entry.id === view);
+export default function LeftPanel({ view, onView, onClose, showSwitcher, explorer, task, manager, solution }) {
+  const views = viewsFor(Boolean(solution));
+  const current = views.find((entry) => entry.id === view) ?? views[0];
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-paper">
@@ -28,7 +34,7 @@ export default function LeftPanel({ view, onView, onClose, showSwitcher, explore
         )}
         {showSwitcher ? (
           <div role="tablist" aria-label="Side panel" className="flex gap-0.5">
-            {LEFT_VIEWS.map((entry) => (
+            {views.map((entry) => (
               <button
                 key={entry.id}
                 type="button"
@@ -61,19 +67,20 @@ export default function LeftPanel({ view, onView, onClose, showSwitcher, explore
         {view === 'files' && <div className="py-2">{explorer}</div>}
         {view === 'task' && task}
         {view === 'manager' && manager}
+        {view === 'solution' && solution}
       </div>
     </div>
   );
 }
 
 /** The narrow icon strip beside the left column on wide screens. */
-export function ActivityBar({ view, open, onSelect }) {
+export function ActivityBar({ view, open, onSelect, demo = false }) {
   return (
     <nav
       aria-label="Workspace views"
       className="flex w-11 shrink-0 flex-col items-center gap-1 border-r border-line bg-paper py-2"
     >
-      {LEFT_VIEWS.map((entry) => {
+      {viewsFor(demo).map((entry) => {
         const Icon = entry.icon;
         const active = open && entry.id === view;
         return (

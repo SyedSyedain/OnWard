@@ -32,7 +32,7 @@ const THEME = {
  * Only syntax errors are reported: the in-browser editor cannot resolve the project's packages,
  * so type checking would show errors that are not real.
  */
-export default function CodeEditor({ path, value, wordWrap, onChange, onSave, onReady }) {
+export default function CodeEditor({ path, value, wordWrap, simple = false, onChange, onSave, onReady }) {
   const onSaveRef = useRef(onSave);
   onSaveRef.current = onSave;
 
@@ -61,8 +61,10 @@ export default function CodeEditor({ path, value, wordWrap, onChange, onSave, on
       loading={<p className="p-4 font-ui text-sm text-muted">Loading the editor…</p>}
       options={{
         fontFamily: 'JetBrains Mono, monospace',
-        fontSize: 13,
-        lineHeight: 21,
+        fontSize: simple ? 14 : 13,
+        lineHeight: simple ? 23 : 21,
+        folding: true,
+        showFoldingControls: 'always',
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
         tabSize: 2,

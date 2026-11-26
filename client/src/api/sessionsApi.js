@@ -19,5 +19,6 @@ export const sessionsApi = {
 
   listChanges: (sessionId) => request('GET', `${sessionPath(sessionId)}/changes`),
   requestReview: (sessionId) => request('POST', `${sessionPath(sessionId)}/reviews`),
+  getSolution: (sessionId) => request('GET', `${sessionPath(sessionId)}/solution`),
   submit: (sessionId) => request('POST', `${sessionPath(sessionId)}/submission`),
 };

@@ -1,5 +1,5 @@
 import { ChevronRight, Search, Sparkles, WrapText, X } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import CodeEditor from './CodeEditor.jsx';
 import FileIcon from './FileIcon.jsx';
 
@@ -7,7 +7,7 @@ import FileIcon from './FileIcon.jsx';
  * Tabs for the open files, a breadcrumb and a few editor controls, over Monaco.
  * `files` comes from useOpenFiles.
  */
-export default function EditorArea({ files, onEditorReady }) {
+export default function EditorArea({ files, onEditorReady, simple = false, onToggleSimple }) {
   const { tabs, activeTab, setActivePath, closeTab, setContent, saveAll } = files;
   const editorRef = useRef(null);
   const [wrap, setWrap] = useState(false);
@@ -16,6 +16,16 @@ export default function EditorArea({ files, onEditorReady }) {
     editorRef.current = editor;
     onEditorReady?.(editor, monaco);
   }
+
+  // Simple view folds the long comment blocks so only the code itself is in view.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const editor = editorRef.current;
+      if (!editor) return;
+      editor.getAction(simple ? 'editor.foldAllBlockComments' : 'editor.unfoldAll')?.run();
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [simple, activeTab?.path, files.revision]);
 
   function runEditorAction(id) {
     const editor = editorRef.current;
@@ -67,6 +77,19 @@ export default function EditorArea({ files, onEditorReady }) {
         </div>
 
         <div className="flex shrink-0 items-center gap-0.5 px-2" role="toolbar" aria-label="Editor controls">
+          {onToggleSimple && (
+            <button
+              type="button"
+              aria-pressed={simple}
+              onClick={onToggleSimple}
+              title={simple ? 'Show every file and comment' : 'Show only the ticket’s files, comments folded'}
+              className={`mr-1 h-7 rounded-md px-2.5 font-ui text-xs font-medium transition-colors focus-visible:outline-2 focus-visible:outline-accent ${
+                simple ? 'bg-ink text-paper-2' : 'border border-line text-ink-2 hover:bg-paper-3'
+              }`}
+            >
+              Simple
+            </button>
+          )}
           <ToolButton label="Find in file" onClick={() => runEditorAction('actions.find')} disabled={!activeTab}>
             <Search className="size-4" aria-hidden />
           </ToolButton>
@@ -101,6 +124,7 @@ export default function EditorArea({ files, onEditorReady }) {
               path={activeTab.path}
               value={activeTab.content}
               wordWrap={wrap}
+              simple={simple}
               onChange={(next) => setContent(activeTab.path, next)}
               onSave={() => saveAll().catch(() => {})}
               onReady={handleReady}

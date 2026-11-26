@@ -18,7 +18,7 @@ const ASPECTS = [
 ];
 
 /**
- * A practice review inside the Codespace: what to fix next, the reviewer's notes, and how this attempt
+ * A code review inside the Codespace: what to fix next, the reviewer's notes, and how this attempt
  * compares with the last one. Nothing is scored here; the final submission happens from the footer.
  */
 export default function ReviewView({ review, reviews, onSelect, onBack, onOpenFile, onFinish }) {
@@ -61,7 +61,7 @@ export default function ReviewView({ review, reviews, onSelect, onBack, onOpenFi
             <span className="h-5 w-px bg-line" aria-hidden />
             <Avatar id="reviewer" name="Reviewer" size="sm" />
             <p className="text-sm">
-              <span className="font-medium text-ink">Practice review {index + 1}</span>
+              <span className="font-medium text-ink">Code review {index + 1}</span>
               <span className="text-muted">
                 {' '}
                 at {new Date(review.reviewedAt).toLocaleTimeString([], { timeStyle: 'short' })}
@@ -73,7 +73,7 @@ export default function ReviewView({ review, reviews, onSelect, onBack, onOpenFi
             >
               {live ? 'AI reviewer' : 'Automatic checks'}
             </span>
-            <span className="ml-auto text-xs text-faint">Not scored. Fix, then review again.</span>
+            <span className="ml-auto text-xs text-faint">Fix what it flags, then review again or submit.</span>
           </header>
 
           <section className="grid items-center gap-5 rounded-2xl border border-line bg-paper-2 p-5 md:grid-cols-[minmax(0,1fr)_auto]">

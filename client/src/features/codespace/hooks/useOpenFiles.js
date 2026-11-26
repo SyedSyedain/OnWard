@@ -14,6 +14,8 @@ export function useOpenFiles(sessionId, { initialPath, onSaved } = {}) {
   const [activePath, setActivePath] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  // Bumps when a whole file is replaced from outside the editor (the demo solution).
+  const [revision, setRevision] = useState(0);
 
   // Saves read the newest tabs from a ref, so editor shortcuts and timers never use stale text.
   const tabsRef = useRef(tabs);
@@ -79,6 +81,22 @@ export function useOpenFiles(sessionId, { initialPath, onSaved } = {}) {
     [saveAll],
   );
 
+  /** Writes a whole file on the server and shows it in a tab, opening the tab if needed. */
+  const replaceFile = useCallback(
+    async (path, content) => {
+      await sessionsApi.saveFile(sessionId, path, content);
+      setTabs((current) =>
+        current.some((tab) => tab.path === path)
+          ? current.map((tab) => (tab.path === path ? { ...tab, content, saved: content } : tab))
+          : [...current, { path, content, saved: content }],
+      );
+      setActivePath(path);
+      setRevision((value) => value + 1);
+      onSavedRef.current?.();
+    },
+    [sessionId],
+  );
+
   const setContent = useCallback((path, content) => {
     setTabs((current) => current.map((tab) => (tab.path === path ? { ...tab, content } : tab)));
   }, []);
@@ -113,6 +131,8 @@ export function useOpenFiles(sessionId, { initialPath, onSaved } = {}) {
     openFile,
     closeTab,
     setContent,
+    replaceFile,
+    revision,
     saveAll,
     saving,
     dirtyCount,

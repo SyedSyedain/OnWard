@@ -13,6 +13,7 @@ import ProblemsList from './components/ProblemsList.jsx';
 import ProjectExplorer from './components/ProjectExplorer.jsx';
 import ReviewView from './components/ReviewView.jsx';
 import SidePanel from './components/SidePanel.jsx';
+import SolutionPanel from './components/SolutionPanel.jsx';
 import SubmitDialog from './components/SubmitDialog.jsx';
 import TaskPanel from './components/TaskPanel.jsx';
 import TeamSidebar from './components/TeamSidebar.jsx';
@@ -61,6 +62,8 @@ function Codespace({ session, onSessionChange }) {
   const [panelTab, setPanelTab] = useState('terminal');
   const [teamRequest, setTeamRequest] = useState(null);
   const [aiMode, setAiMode] = useState(null);
+  const [demo, setDemo] = useState(false);
+  const [simple, setSimple] = useState(false);
 
   const [testResult, setTestResult] = useState(lastReview?.testResult ?? null);
   const [testSource, setTestSource] = useState(lastReview ? 'From your last review' : null);
@@ -78,7 +81,10 @@ function Codespace({ session, onSessionChange }) {
   useEffect(() => {
     healthApi
       .get()
-      .then((health) => setAiMode(health.ai))
+      .then((health) => {
+        setAiMode(health.ai);
+        setDemo(Boolean(health.demo));
+      })
       .catch(() => setAiMode('fallback'));
     refreshChanges().catch(() => {});
   }, [refreshChanges]);
@@ -269,7 +275,7 @@ function Codespace({ session, onSessionChange }) {
       )}
 
       <div className="relative flex min-h-0 flex-1">
-        {wide && <ActivityBar view={leftView} open={leftOpen} onSelect={showLeft} />}
+        {wide && <ActivityBar view={leftView} open={leftOpen} onSelect={showLeft} demo={demo} />}
 
         <SidePanel
           side="left"
@@ -287,7 +293,7 @@ function Codespace({ session, onSessionChange }) {
             explorer={
               <ProjectExplorer
                 projectName={session.simulationName}
-                files={files.files}
+                files={simple ? files.files.filter((path) => session.ticket.relevantFiles.includes(path) || path === 'README.md') : files.files}
                 activePath={files.activePath}
                 changed={changed}
                 dirty={dirty}
@@ -305,11 +311,27 @@ function Codespace({ session, onSessionChange }) {
               />
             }
             manager={<ManagerChat session={session} onSessionChange={onSessionChange} />}
+            solution={
+              demo ? (
+                <SolutionPanel
+                  sessionId={session.id}
+                  testing={testing}
+                  onApply={files.replaceFile}
+                  onRunTests={() => runTests()}
+                  onSubmit={() => setSubmitting(true)}
+                />
+              ) : null
+            }
           />
         </SidePanel>
 
         <main className="flex min-w-0 flex-1 flex-col">
-          <EditorArea files={files} onEditorReady={handleEditorReady} />
+          <EditorArea
+            files={files}
+            onEditorReady={handleEditorReady}
+            simple={simple}
+            onToggleSimple={() => setSimple((value) => !value)}
+          />
           <BottomPanel
             open={panelOpen}
             onToggle={() => setPanelOpen((open) => !open)}
