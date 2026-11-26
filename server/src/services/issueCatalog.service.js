@@ -94,4 +94,21 @@ export function getHiddenTestPath(simulationId, issue) {
   return path.join(config.paths.privateData, simulationId, 'hidden-tests', issue.hiddenTest);
 }
 
+/**
+ * The predefined solution of a ticket, as full file contents. Demo mode only:
+ * it lets a presenter show how the evaluation reacts to a correct fix.
+ */
+export function getSolution(simulationId, issue) {
+  const directory = path.join(config.paths.privateData, simulationId, 'solutions', issue.id);
+  if (!fs.existsSync(directory)) {
+    throw AppError.notFound('This ticket has no demo solution.', 'SOLUTION_NOT_FOUND');
+  }
+  return fs
+    .readdirSync(directory, { recursive: true })
+    .map((file) => String(file).split(path.sep).join('/'))
+    .filter((file) => fs.statSync(path.join(directory, file)).isFile())
+    .sort()
+    .map((file) => ({ path: file, content: fs.readFileSync(path.join(directory, file), 'utf8') }));
+}
+
 export const MAX_HINT_LEVEL = 4;

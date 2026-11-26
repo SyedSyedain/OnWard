@@ -126,7 +126,7 @@ const MANAGER = [
     words: ['thanks', 'thank you', 'got it', 'great', 'cool', 'okay', 'ok', 'understood', 'makes sense'],
     answers: () => [
       'You are welcome. Shout if anything in the ticket is unclear.',
-      'Good. Ask for a practice review when you think it is ready.',
+      'Good. Ask for a code review when you think it is ready.',
     ],
   },
 ];
@@ -208,7 +208,7 @@ const ALEX = [
     question: 'Can you check my approach?',
     words: ['approach', 'check my', 'correct', 'does this look', 'good idea', 'my change', 'is this right'],
     answers: () => [
-      'Tell me in two lines what you changed and why. Then run npm test: if the acceptance checks pass and the existing tests still pass, ask for a practice review.',
+      'Tell me in two lines what you changed and why. Then run npm test: if the acceptance checks pass and the existing tests still pass, ask for a code review.',
       'Good habit to check. Ask yourself: does my change fix the cause or only hide the symptom? Would it still work for the edge cases Sarah would try?',
     ],
   },
@@ -236,7 +236,7 @@ const SARAH = [
     words: ['verify', 'before i submit', 'checklist', 'ready', 'submit', 'double check'],
     answers: (f) => [
       `Check each of these yourself, then run the full test suite so nothing old breaks:\n${f.criteriaList}`,
-      'Three things: every acceptance check passes, every existing test still passes, and you removed any debugging logs. Then ask for a practice review.',
+      'Three things: every acceptance check passes, every existing test still passes, and you removed any debugging logs. Then ask for a code review.',
     ],
   },
   {

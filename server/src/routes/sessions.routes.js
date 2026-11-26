@@ -22,6 +22,7 @@ sessionsRouter.get('/:sessionId/files', controller.listFiles);
 sessionsRouter.get('/:sessionId/files/content', validate('query', filePathQuery), controller.readFile);
 sessionsRouter.put('/:sessionId/files/content', validate('body', saveFileBody), controller.saveFile);
 
+sessionsRouter.get('/:sessionId/solution', controller.getSolution);
 sessionsRouter.post('/:sessionId/test-runs', testRunLimiter, controller.runTests);
 sessionsRouter.post('/:sessionId/teammate/messages', aiLimiter, validate('body', teammateMessageBody), controller.sendTeammateMessage);
 sessionsRouter.get('/:sessionId/changes', controller.listChanges);

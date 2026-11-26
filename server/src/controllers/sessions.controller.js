@@ -3,6 +3,9 @@
  * and shape responses; they contain no business rules.
  */
 
+import { config } from '../config/env.js';
+import { AppError } from '../lib/AppError.js';
+import * as issueCatalog from '../services/issueCatalog.service.js';
 import * as sessionService from '../services/session.service.js';
 import * as submissionService from '../services/submission.service.js';
 import * as workspace from '../services/workspace.service.js';
@@ -69,6 +72,16 @@ export async function requestReview(req, res) {
 export async function submit(req, res) {
   const session = await submissionService.submit(req.params.sessionId);
   res.status(201).json({ session: sessionService.toPublicSession(session) });
+}
+
+/** Demo mode only: the predefined fix for this session's ticket, as full files. */
+export function getSolution(req, res) {
+  if (!config.demoMode) {
+    throw AppError.notFound('Solutions are only available in demo mode.', 'DEMO_MODE_OFF');
+  }
+  const session = requireInProgress(req.params.sessionId);
+  const issue = issueCatalog.getIssue(session.simulationId, session.issueId);
+  res.json({ files: issueCatalog.getSolution(session.simulationId, issue) });
 }
 
 function requireInProgress(sessionId) {
