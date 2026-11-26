@@ -199,3 +199,21 @@ test('the automatic review rates the change when AI is off', async () => {
   assert.ok(review.aspects.maintainability.rating < 5, 'leftover debug output lowers maintainability');
   assert.ok(review.improvements.some((item) => item.includes('debugging output')));
 });
+
+test('every response carries security headers', async () => {
+  const response = await fetch(`${baseUrl}/health`);
+  assert.equal(response.headers.get('x-content-type-options'), 'nosniff');
+  assert.equal(response.headers.get('x-frame-options'), 'DENY');
+  assert.match(response.headers.get('content-security-policy'), /default-src 'none'/);
+  assert.equal(response.headers.get('x-powered-by'), null);
+});
+
+test('an oversized request is refused with 413, not a server error', async () => {
+  const response = await fetch(`${baseUrl}/sessions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ padding: 'x'.repeat(400 * 1024) }),
+  });
+  assert.equal(response.status, 413);
+  assert.equal((await response.json()).error.code, 'PAYLOAD_TOO_LARGE');
+});

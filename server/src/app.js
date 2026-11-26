@@ -7,6 +7,7 @@ import cors from 'cors';
 import express from 'express';
 import { config } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
+import { securityHeaders } from './middleware/securityHeaders.js';
 import { apiRouter } from './routes/index.js';
 
 export function createApp() {
@@ -15,6 +16,7 @@ export function createApp() {
   app.disable('x-powered-by');
   // Hosted behind one proxy (Render), so rate limits must read the visitor's address from it.
   if (config.nodeEnv === 'production') app.set('trust proxy', 1);
+  app.use(securityHeaders({ https: config.nodeEnv === 'production' }));
   app.use(cors({ origin: config.clientOrigin }));
   app.use(express.json({ limit: '300kb' }));
 

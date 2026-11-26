@@ -15,6 +15,12 @@ export function errorHandler(error, req, res, next) {
     return res.status(400).json({ error: { code: 'INVALID_JSON', message: 'The request body is not valid JSON.' } });
   }
 
+  if (error.type === 'entity.too.large') {
+    return res
+      .status(413)
+      .json({ error: { code: 'PAYLOAD_TOO_LARGE', message: 'The request is too large (300 KB at most).' } });
+  }
+
   logger.error('Unhandled error', { method: req.method, path: req.path, reason: error.message });
   return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Something went wrong on our side.' } });
 }
