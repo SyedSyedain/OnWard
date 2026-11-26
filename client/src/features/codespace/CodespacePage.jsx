@@ -155,6 +155,18 @@ function Codespace({ session, onSessionChange }) {
     return [...fromEditor, ...fromTests];
   }, [markers, files.tabs, testResult]);
 
+  // Per file: how many problems and how bad, so the explorer and tabs can flag those files.
+  const fileIssues = useMemo(() => {
+    const byPath = new Map();
+    for (const problem of problems) {
+      const entry = byPath.get(problem.path) ?? { count: 0, severity: 'warning' };
+      entry.count += 1;
+      if (problem.severity === 'error') entry.severity = 'error';
+      byPath.set(problem.path, entry);
+    }
+    return byPath;
+  }, [problems]);
+
   async function goTo(path, line, column) {
     pendingReveal.current = line ? { path, line, column } : null;
     await files.openFile(path);
@@ -293,6 +305,7 @@ function Codespace({ session, onSessionChange }) {
                 activePath={files.activePath}
                 changed={changed}
                 dirty={dirty}
+                issues={fileIssues}
                 revealPaths={session.ticket.relevantFiles}
                 onOpen={openFileFromPanel}
               />
@@ -323,6 +336,7 @@ function Codespace({ session, onSessionChange }) {
           <EditorArea
             files={files}
             onEditorReady={handleEditorReady}
+            issues={fileIssues}
             simple={simple}
             onToggleSimple={() => setSimple((value) => !value)}
           />

@@ -7,7 +7,7 @@ import FileIcon from './FileIcon.jsx';
  * Tabs for the open files, a breadcrumb and a few editor controls, over Monaco.
  * `files` comes from useOpenFiles.
  */
-export default function EditorArea({ files, onEditorReady, simple = false, onToggleSimple }) {
+export default function EditorArea({ files, onEditorReady, issues = new Map(), simple = false, onToggleSimple }) {
   const { tabs, activeTab, setActivePath, closeTab, setContent, saveAll } = files;
   const editorRef = useRef(null);
   const [wrap, setWrap] = useState(false);
@@ -42,6 +42,7 @@ export default function EditorArea({ files, onEditorReady, simple = false, onTog
             const active = tab.path === activeTab?.path;
             const unsaved = tab.content !== tab.saved;
             const name = tab.path.split('/').pop();
+            const issue = issues.get(tab.path);
             return (
               <div
                 key={tab.path}
@@ -60,7 +61,15 @@ export default function EditorArea({ files, onEditorReady, simple = false, onTog
                   className="flex h-full items-center gap-1.5 pl-3 pr-1 font-ui text-[13px] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent"
                 >
                   <FileIcon path={tab.path} className="size-3.5 text-muted" />
-                  {name}
+                  <span className={issue ? (issue.severity === 'error' ? 'text-bad' : 'text-warn') : ''}>{name}</span>
+                  {issue && (
+                    <span
+                      className={`font-mono text-[11px] font-semibold ${issue.severity === 'error' ? 'text-bad' : 'text-warn'}`}
+                      title={`${issue.count} ${issue.count === 1 ? 'problem' : 'problems'} in this file`}
+                    >
+                      {issue.count}
+                    </span>
+                  )}
                 </button>
                 <button
                   type="button"
