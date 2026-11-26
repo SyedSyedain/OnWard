@@ -49,6 +49,9 @@ export default function LandingNav({ onStart, returnPoint, inert }) {
             {resume.label}
           </Link>
         )}
+        <Link to="/profile" className="key key--small nav__resume">
+          Profile
+        </Link>
         <button type="button" className="key key--small key--primary" onClick={onStart}>
           Start
         </button>

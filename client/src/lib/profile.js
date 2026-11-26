@@ -51,6 +51,7 @@ export function addToHistory(session) {
   const entry = {
     sessionId: session.id,
     recordId,
+    studentName: session.studentName,
     issueId: session.ticket.issueId,
     title: session.ticket.title,
     simulationName: session.simulationName,
@@ -63,6 +64,21 @@ export function addToHistory(session) {
   };
   const sorted = [entry, ...history].sort((a, b) => b.submittedAt.localeCompare(a.submittedAt));
   write(key, sorted.slice(0, MAX_HISTORY));
+}
+
+/**
+ * The profile shown when nobody has saved one: the name from their latest ticket
+ * (or "Guest"), their latest role, and the date of their first ticket.
+ */
+export function guestProfile(history) {
+  const latest = history[0];
+  const first = history.at(-1);
+  return {
+    name: latest?.studentName && latest.studentName !== 'Guest' ? latest.studentName : 'Guest',
+    email: '',
+    roleId: latest?.roleId ?? 'frontend-developer',
+    createdAt: first?.submittedAt ?? new Date().toISOString(),
+  };
 }
 
 /** Re-renders when the profile or history changes, in this tab or another. */
@@ -161,7 +177,7 @@ export function badgesFor(history, stats) {
   return [
     { id: 'first', name: 'First ticket', goal: 'Submit a ticket', have: Math.min(history.length, 1), need: 1 },
     { id: 'fix', name: 'First fix', goal: 'Resolve a ticket', have: Math.min(resolved.length, 1), need: 1 },
-    { id: 'streak', name: 'On a roll', goal: 'Practise 3 days in a row', have: Math.min(stats.longestStreak, 3), need: 3 },
+    { id: 'streak', name: 'On a roll', goal: 'Work 3 days in a row', have: Math.min(stats.longestStreak, 3), need: 3 },
     { id: 'sharp', name: 'Sharp', goal: 'Score 90 or more', have: Math.min(best, 90), need: 90 },
     {
       id: 'solo',

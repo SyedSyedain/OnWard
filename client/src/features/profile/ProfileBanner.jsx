@@ -1,5 +1,4 @@
-import { CheckCircle2, Flame, Gauge, LogOut, Pencil, Play, Ticket, Trophy } from 'lucide-react';
-import { useState } from 'react';
+import { CheckCircle2, Flame, Gauge, Play, Ticket, Trophy } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useProgress } from '../../components/score/ScoreVisuals.jsx';
 import { ROLES } from '../../lib/constants.js';
@@ -7,10 +6,8 @@ import { initials } from '../../lib/profile.js';
 
 /**
  * The top of the profile: who you are, your level and streak, and your totals.
- * Log out asks once before it forgets the profile on this browser.
  */
-export default function ProfileBanner({ profile, stats, level, since, onEdit, onLogOut }) {
-  const [confirming, setConfirming] = useState(false);
+export default function ProfileBanner({ profile, stats, level, since }) {
   const role = ROLES.find((item) => item.id === profile.roleId)?.title ?? profile.roleId;
   const rate = stats.tickets ? Math.round((stats.resolved / stats.tickets) * 100) : 0;
 
@@ -23,7 +20,7 @@ export default function ProfileBanner({ profile, stats, level, since, onEdit, on
         <LevelAvatar name={profile.name} level={level} />
         <div className="min-w-0 flex-1">
           <h1 className="break-words font-display text-3xl font-semibold tracking-tight sm:text-4xl">{profile.name}</h1>
-          <p className="truncate text-sm text-paper-2/60">{profile.email}</p>
+          <p className="truncate text-sm text-paper-2/60">Saved in this browser, no sign-in needed</p>
           <p className="mt-2.5 flex flex-wrap gap-1.5 text-xs">
             <span className="rounded-full bg-accent px-2.5 py-1 font-medium text-ink">{role}</span>
             <span className="rounded-full bg-paper-2/10 px-2.5 py-1 text-paper-2/80">On OnWard since {since}</span>
@@ -31,43 +28,12 @@ export default function ProfileBanner({ profile, stats, level, since, onEdit, on
         </div>
 
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          {confirming ? (
-            <div
-              role="alertdialog"
-              aria-label="Log out"
-              className="flex flex-wrap items-center gap-2 rounded-2xl bg-paper-2/10 p-2 pl-3.5 animate-[fade-in_160ms_ease-out]"
-            >
-              <p className="max-w-[30ch] text-xs leading-snug text-paper-2/80">
-                Your tickets stay saved for this email. Log back in with it to see them.
-              </p>
-              <button
-                type="button"
-                onClick={onLogOut}
-                autoFocus
-                className="h-9 rounded-full bg-paper-2 px-4 text-sm font-medium text-ink hover:bg-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-              >
-                Log out
-              </button>
-              <button
-                type="button"
-                onClick={() => setConfirming(false)}
-                className="h-9 rounded-full px-3 text-sm text-paper-2/70 hover:text-paper-2 focus-visible:outline-2 focus-visible:outline-accent"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <>
-              <Link
-                to="/?start"
-                className="group flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-ink shadow-[0_10px_24px_-12px] shadow-accent transition-transform hover:-translate-y-0.5 hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper-2 sm:flex-none"
-              >
-                <Play className="size-4 transition-transform group-hover:scale-110" aria-hidden /> Start a ticket
-              </Link>
-              <IconButton label="Edit profile" icon={Pencil} onClick={onEdit} />
-              <IconButton label="Log out" icon={LogOut} onClick={() => setConfirming(true)} />
-            </>
-          )}
+          <Link
+            to="/?start"
+            className="group flex h-10 flex-1 items-center justify-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-ink shadow-[0_10px_24px_-12px] shadow-accent transition-transform hover:-translate-y-0.5 hover:bg-accent-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper-2 sm:flex-none"
+          >
+            <Play className="size-4 transition-transform group-hover:scale-110" aria-hidden /> Start a ticket
+          </Link>
         </div>
       </div>
 
@@ -170,19 +136,5 @@ function Tile({ icon: Icon, label, value }) {
         {shown}
       </dd>
     </div>
-  );
-}
-
-function IconButton({ label, icon: Icon, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      title={label}
-      className="flex h-10 items-center gap-2 rounded-full bg-paper-2/10 px-4 text-sm text-paper-2/85 transition-colors hover:bg-paper-2/20 hover:text-paper-2 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
-    >
-      <Icon className="size-4" aria-hidden />
-      <span>{label}</span>
-    </button>
   );
 }
