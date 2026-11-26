@@ -32,9 +32,11 @@ function foldersLeadingTo(paths) {
 /**
  * The project's real file tree. Folders expand and collapse; files open in a tab.
  * `changed` marks files that differ from the original project, `dirty` marks unsaved edits,
+ * `revealPaths` are the ticket's files: tagged "fix here" so the student knows where to work.
  * `issues` (path → { count, severity }) turns files with problems, and their folders, red or amber.
  */
 export default function ProjectExplorer({ projectName, files, activePath, changed, dirty, issues = new Map(), revealPaths, onOpen }) {
+  const targets = useMemo(() => new Set(revealPaths), [revealPaths]);
   const tree = useMemo(() => buildTree(files), [files]);
   const [open, setOpen] = useState(() => foldersLeadingTo(revealPaths));
 
@@ -65,6 +67,7 @@ export default function ProjectExplorer({ projectName, files, activePath, change
           changed={changed}
           dirty={dirty}
           issues={issues}
+          targets={targets}
           onOpen={onOpen}
         />
       )}
@@ -84,7 +87,7 @@ function folderIssue(issues, folderPath) {
 
 const ISSUE_TEXT = { error: 'text-bad', warning: 'text-warn' };
 
-function TreeLevel({ node, depth, open, onToggle, activePath, changed, dirty, issues, onOpen }) {
+function TreeLevel({ node, depth, open, onToggle, activePath, changed, dirty, issues, targets, onOpen }) {
   const indent = { paddingLeft: `${depth * 14 + 10}px` };
   const folders = [...node.folders.entries()].sort(([a], [b]) => a.localeCompare(b));
   const files = [...node.files].sort((a, b) => a.name.localeCompare(b.name));
@@ -130,6 +133,7 @@ function TreeLevel({ node, depth, open, onToggle, activePath, changed, dirty, is
                 changed={changed}
                 dirty={dirty}
                 issues={issues}
+                targets={targets}
                 onOpen={onOpen}
               />
             )}
@@ -140,6 +144,7 @@ function TreeLevel({ node, depth, open, onToggle, activePath, changed, dirty, is
         const active = file.path === activePath;
         const state = dirty.has(file.path) ? 'unsaved' : changed.has(file.path) ? 'modified' : null;
         const issue = issues.get(file.path);
+        const target = targets.has(file.path);
         return (
           <li key={file.path} role="treeitem" aria-selected={active}>
             <button
@@ -151,9 +156,25 @@ function TreeLevel({ node, depth, open, onToggle, activePath, changed, dirty, is
               } ${issue?.severity === 'error' ? 'bg-bad-soft/70' : ''}`}
             >
               <FileIcon path={file.path} className="size-3.5 text-muted" />
-              <span className={`min-w-0 flex-1 truncate ${issue ? `${ISSUE_TEXT[issue.severity]} underline decoration-wavy decoration-1 underline-offset-2` : ''}`}>
+              <span
+                className={`min-w-0 flex-1 truncate ${
+                  issue
+                    ? `${ISSUE_TEXT[issue.severity]} underline decoration-wavy decoration-1 underline-offset-2`
+                    : target
+                      ? 'font-semibold text-accent-strong'
+                      : ''
+                }`}
+              >
                 {file.name}
               </span>
+              {target && (
+                <span
+                  className="shrink-0 rounded border border-accent/40 bg-accent-soft px-1 text-[10px] font-medium leading-4 text-accent-strong"
+                  title="This ticket's bug is in this file"
+                >
+                  fix here
+                </span>
+              )}
               {issue && (
                 <span
                   className={`grid h-4 min-w-4 place-items-center rounded-full px-1 font-mono text-[10px] font-semibold text-paper-2 ${
