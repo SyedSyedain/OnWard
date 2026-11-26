@@ -25,8 +25,6 @@ const envSchema = z.object({
   GEMINI_FALLBACK_MODELS: z.string().default('gemini-3.7-flash,gemini-3.5-flash-lite'),
   RECORD_SECRET: z.string().min(16, 'RECORD_SECRET must be at least 16 characters.').default('local-development-secret-only'),
   TEST_RUN_TIMEOUT_SECONDS: z.coerce.number().int().min(5).max(120).default(20),
-  // Demo only: lets the Codespace load the predefined solution for a ticket. Leave off for real use.
-  DEMO_MODE: z.enum(['true', 'false', '']).default('false'),
   DATA_DIRECTORY: z.string().default(path.join(serverRoot, '.data')),
 });
 
@@ -58,7 +56,6 @@ export const config = Object.freeze({
     enabled: env.GEMINI_API_KEY.trim().length > 0,
   }),
   recordSecret: env.RECORD_SECRET,
-  demoMode: env.DEMO_MODE === 'true',
   testRunTimeoutMs: env.TEST_RUN_TIMEOUT_SECONDS * 1000,
   paths: Object.freeze({
     simulations: path.join(repoRoot, 'simulations'),

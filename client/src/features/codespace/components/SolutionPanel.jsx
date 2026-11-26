@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { sessionsApi } from '../../../api/sessionsApi.js';
 
 /**
- * Demo mode only: loads the ticket's predefined fix so a presenter can show the evaluation.
+ * Loads the ticket's predefined fix into the workspace, to show how the evaluation reacts.
  * Run the tests first (the hidden checks fail), apply the fix, run them again, then submit.
  */
 export default function SolutionPanel({ sessionId, onApply, onRunTests, onSubmit, testing }) {
@@ -27,7 +27,7 @@ export default function SolutionPanel({ sessionId, onApply, onRunTests, onSubmit
   return (
     <div className="flex flex-col gap-4 p-3 font-ui text-[13px] text-ink-2">
       <p className="rounded-md bg-accent-soft px-2.5 py-2 text-xs text-ink">
-        Demo mode. This panel shows how the evaluation reacts to a correct fix. Students never see it.
+        Stuck, or want to see how scoring works? Apply the ticket’s solution and follow these steps.
       </p>
 
       <ol className="flex flex-col gap-3">

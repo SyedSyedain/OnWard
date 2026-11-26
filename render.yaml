@@ -22,8 +22,5 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-      # Shows the solution panel in the Codespace for live demos. Set to false after judging.
-      - key: DEMO_MODE
-        value: 'true'
       - key: RECORD_SECRET
         generateValue: true

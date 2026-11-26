@@ -7,17 +7,12 @@ export const LEFT_VIEWS = [
   { id: 'files', label: 'Explorer', icon: Files },
   { id: 'task', label: 'Task', icon: ClipboardList },
   { id: 'manager', label: 'Manager', icon: MessagesSquare },
+  { id: 'solution', label: 'Solution', icon: KeyRound },
 ];
-
-/** Shown only when the server runs in demo mode. */
-export const SOLUTION_VIEW = { id: 'solution', label: 'Solution (demo)', icon: KeyRound };
-
-const viewsFor = (demo) => (demo ? [...LEFT_VIEWS, SOLUTION_VIEW] : LEFT_VIEWS);
 
 /** The left column: the project explorer, the task, or the manager conversation. */
 export default function LeftPanel({ view, onView, onClose, showSwitcher, explorer, task, manager, solution }) {
-  const views = viewsFor(Boolean(solution));
-  const current = views.find((entry) => entry.id === view) ?? views[0];
+  const current = LEFT_VIEWS.find((entry) => entry.id === view) ?? LEFT_VIEWS[0];
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-paper">
@@ -34,7 +29,7 @@ export default function LeftPanel({ view, onView, onClose, showSwitcher, explore
         )}
         {showSwitcher ? (
           <div role="tablist" aria-label="Side panel" className="flex gap-0.5">
-            {views.map((entry) => (
+            {LEFT_VIEWS.map((entry) => (
               <button
                 key={entry.id}
                 type="button"
@@ -74,13 +69,13 @@ export default function LeftPanel({ view, onView, onClose, showSwitcher, explore
 }
 
 /** The narrow icon strip beside the left column on wide screens. */
-export function ActivityBar({ view, open, onSelect, demo = false }) {
+export function ActivityBar({ view, open, onSelect }) {
   return (
     <nav
       aria-label="Workspace views"
       className="flex w-11 shrink-0 flex-col items-center gap-1 border-r border-line bg-paper py-2"
     >
-      {viewsFor(demo).map((entry) => {
+      {LEFT_VIEWS.map((entry) => {
         const Icon = entry.icon;
         const active = open && entry.id === view;
         return (

@@ -14,7 +14,7 @@ export function useOpenFiles(sessionId, { initialPath, onSaved } = {}) {
   const [activePath, setActivePath] = useState(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
-  // Bumps when a whole file is replaced from outside the editor (the demo solution).
+  // Bumps when a whole file is replaced from outside the editor (the ticket's solution).
   const [revision, setRevision] = useState(0);
 
   // Saves read the newest tabs from a ref, so editor shortcuts and timers never use stale text.

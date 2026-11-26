@@ -107,8 +107,6 @@ for test runs, which serverless hosts cannot):
 2. Set `CLIENT_ORIGIN` to the Vercel address of the web client, and `OPENAI_API_KEY` and/or
    `GEMINI_API_KEY` if you have them.
    `RECORD_SECRET` is generated for you.
-   `DEMO_MODE=true` adds a Solution (demo) panel to the Codespace that loads each ticket's
-   predefined fix, for live demos. Set it to `false` for real use.
 
 **Web client on [Vercel](https://vercel.com):**
 

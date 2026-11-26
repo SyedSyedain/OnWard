@@ -95,13 +95,13 @@ export function getHiddenTestPath(simulationId, issue) {
 }
 
 /**
- * The predefined solution of a ticket, as full file contents. Demo mode only:
- * it lets a presenter show how the evaluation reacts to a correct fix.
+ * The predefined solution of a ticket, as full file contents, so the Codespace can
+ * apply a correct fix and show how the evaluation reacts to it.
  */
 export function getSolution(simulationId, issue) {
   const directory = path.join(config.paths.privateData, simulationId, 'solutions', issue.id);
   if (!fs.existsSync(directory)) {
-    throw AppError.notFound('This ticket has no demo solution.', 'SOLUTION_NOT_FOUND');
+    throw AppError.notFound('This ticket has no solution yet.', 'SOLUTION_NOT_FOUND');
   }
   return fs
     .readdirSync(directory, { recursive: true })

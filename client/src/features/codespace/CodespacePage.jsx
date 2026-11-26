@@ -62,7 +62,6 @@ function Codespace({ session, onSessionChange }) {
   const [panelTab, setPanelTab] = useState('terminal');
   const [teamRequest, setTeamRequest] = useState(null);
   const [aiMode, setAiMode] = useState(null);
-  const [demo, setDemo] = useState(false);
   const [simple, setSimple] = useState(false);
 
   const [testResult, setTestResult] = useState(lastReview?.testResult ?? null);
@@ -81,10 +80,7 @@ function Codespace({ session, onSessionChange }) {
   useEffect(() => {
     healthApi
       .get()
-      .then((health) => {
-        setAiMode(health.ai);
-        setDemo(Boolean(health.demo));
-      })
+      .then((health) => setAiMode(health.ai))
       .catch(() => setAiMode('fallback'));
     refreshChanges().catch(() => {});
   }, [refreshChanges]);
@@ -275,7 +271,7 @@ function Codespace({ session, onSessionChange }) {
       )}
 
       <div className="relative flex min-h-0 flex-1">
-        {wide && <ActivityBar view={leftView} open={leftOpen} onSelect={showLeft} demo={demo} />}
+        {wide && <ActivityBar view={leftView} open={leftOpen} onSelect={showLeft} />}
 
         <SidePanel
           side="left"
@@ -312,15 +308,13 @@ function Codespace({ session, onSessionChange }) {
             }
             manager={<ManagerChat session={session} onSessionChange={onSessionChange} />}
             solution={
-              demo ? (
-                <SolutionPanel
-                  sessionId={session.id}
-                  testing={testing}
-                  onApply={files.replaceFile}
-                  onRunTests={() => runTests()}
-                  onSubmit={() => setSubmitting(true)}
-                />
-              ) : null
+              <SolutionPanel
+                sessionId={session.id}
+                testing={testing}
+                onApply={files.replaceFile}
+                onRunTests={() => runTests()}
+                onSubmit={() => setSubmitting(true)}
+              />
             }
           />
         </SidePanel>
